@@ -1,0 +1,11 @@
+Source: linuxmuster-prepare
+Section: linuxmuster
+Priority: optional
+Maintainer: Thomas Schmitt <thomas@linuxmuster.net>
+Build-Depends: debhelper (>= 5.0.0)
+Standards-Version: 5.0.0
+
+Package: linuxmuster-prepare
+Architecture: all
+Depends: python3-ipy, python3-netifaces, ssh, vim, bash-completion, net-tools, ifupdown, resolvconf
+Description: linuxmuster.net pre setup configuration scripts

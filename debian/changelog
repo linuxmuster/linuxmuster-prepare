@@ -1,0 +1,5 @@
+linuxmuster-prepare (0.1.0-0ubuntu0) lmn7-testing; urgency=low
+
+  * initial release.
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Wed, 29 Nov 2017 15:52:31 +0100

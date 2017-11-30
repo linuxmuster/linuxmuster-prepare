@@ -1,0 +1,3 @@
+sbin/*		                        usr/sbin/
+share/*		                        usr/share/linuxmuster-prepare/
+share/lmn7.list                   etc/apt/sources.list.d/
