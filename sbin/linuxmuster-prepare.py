@@ -2,7 +2,7 @@
 #
 # linuxmuster-prepare.py
 # thomas@linuxmuster.net
-# 20171212
+# 20180128
 #
 
 import configparser
@@ -54,7 +54,7 @@ setup = False
 reboot = False
 updates = False
 iniread = False
-sharedir = '/usr/share/linuxmuster-prepare'
+sharedir = '/usr/share/linuxmuster/prepare'
 templates = sharedir + '/templates'
 repokey = sharedir + '/lmn7-repo.key'
 cachedir = '/var/cache/linuxmuster'
@@ -435,7 +435,7 @@ def do_fstab_root(mountopts):
         count += 1
 
 # swap file
-def do_swap():
+def do_swap(swapsize):
     print('## Swapfile')
     swapfile = '/swapfile'
     gbsize = swapsize + 'G'
@@ -544,35 +544,65 @@ if os.path.isfile(setupini):
 
 # read previously created prepare.ini
 if os.path.isfile(prepini):
-    printr('## Reading default values from a previous run ... ')
+    print('## Reading default values from a previous run:')
+    prep = configparser.ConfigParser(inline_comment_prefixes=('#', ';'))
+    prep.read(prepini)
     try:
-        prep = configparser.ConfigParser(inline_comment_prefixes=('#', ';'))
-        prep.read(prepini)
-        iface_ini = prep.get('setup', 'iface')
         domainname_ini = prep.get('setup', 'domainname')
-        hostip_ini = prep.get('setup', 'hostip')
-        serverip_ini = prep.get('setup', 'serverip')
-        hostname_ini = prep.get('setup', 'hostname')
-        profile_ini = prep.get('setup', 'profile')
-        firewallip_ini = prep.get('setup', 'firewallip')
-        bitmask_ini = prep.get('setup', 'bitmask')
-        swapsize_ini = prep.get('setup', 'swapsize')
-        iniread = True
-        print('OK!')
+        if domainname_ini != '':
+            domainname = domainname_ini
+            print('# domainname: ' + domainname)
     except:
-        print('failed!')
-
-# use values in case of success
-if iniread:
-    iface = iface_ini
-    domainname = domainname_ini
-    firewallip = firewallip_ini
-    serverip = serverip_ini
-    profile = profile_ini
-    hostname = hostname_ini
-    hostip = hostip_ini
-    bitmask = bitmask_ini
-    swapsize = swapsize_ini
+        pass
+    try:
+        hostip_ini = prep.get('setup', 'hostip')
+        if hostip_ini != '':
+            hostip = hostip_ini
+            print('# hostip: ' + hostip)
+    except:
+        pass
+    try:
+        hostname_ini = prep.get('setup', 'hostname')
+        if hostname_ini != '':
+            hostname = hostname_ini
+            print('# hostname: ' + hostname)
+    except:
+        pass
+    try:
+        profile_ini = prep.get('setup', 'profile')
+        if profile_ini != '':
+            profile = profile_ini
+            print('# profile: ' + profile)
+    except:
+        pass
+    try:
+        serverip_ini = prep.get('setup', 'serverip')
+        if serverip_ini != '':
+            serverip = serverip_ini
+            print('# serverip: ' + serverip)
+    except:
+        pass
+    try:
+        firewallip_ini = prep.get('setup', 'firewallip')
+        if firewallip_ini != '':
+            firewallip = firewallip_ini
+            print('# firewallip: ' + firewallip)
+    except:
+        pass
+    try:
+        bitmask_ini = prep.get('setup', 'bitmask')
+        if bitmask_ini != '':
+            bitmask = bitmask_ini
+            print('# bitmask: ' + bitmask)
+    except:
+        pass
+    try:
+        swapsize_ini = prep.get('setup', 'swapsize')
+        if swapsize_ini != '':
+            swapsize = swapsize_ini
+            print('# swapsize: ' + swapsize)
+    except:
+        pass
     if hostip != '' and bitmask !='':
         ipnet = hostip + '/' + bitmask
 
@@ -681,7 +711,7 @@ elif setup:
 
 # write configs
 print('## writing configuration')
-os.system('mkdir -p /etc/network/interfaces.d')
+#os.system('mkdir -p /etc/network/interfaces.d')
 os.system('mkdir -p ' + cachedir)
 for item in os.listdir(templates):
     rc, content = readTextfile(templates + '/' + item)
@@ -693,11 +723,11 @@ for item in os.listdir(templates):
     content = content.replace('@@serverip@@', serverip)
     content = content.replace('@@hostip@@', hostip)
     content = content.replace('@@hostname@@', hostname)
-    content = content.replace('@@netmask@@', netmask)
     content = content.replace('@@bitmask@@', bitmask)
+    content = content.replace('@@netmask@@', netmask)
     content = content.replace('@@network@@', network)
-    content = content.replace('@@profile@@', profile)
     content = content.replace('@@broadcast@@', broadcast)
+    content = content.replace('@@profile@@', profile)
     content = content.replace('@@firewallip@@', firewallip)
     content = content.replace('@@domainname@@', domainname)
     content = content.replace('@@swapsize@@', swapsize)

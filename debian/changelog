@@ -5,11 +5,11 @@ linuxmuster-prepare (0.2.0-0ubuntu0) lmn7-testing; urgency=low
   * removed dnsip query.
   * added reboot option.
   * added initial and setup options.
-  * set root password hard coded to 'Muster!'.
-  * removed root password option.
+  * set default root password to 'Muster!'.
+  * writing prepare.ini.
   * updated README.md.
 
- -- Thomas Schmitt <thomas@linuxmuster.net>  Sun, 28 Jan 2018 13:41:15 +0100
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Sun, 28 Jan 2018 16:01:50 +0100
 
 linuxmuster-prepare (0.1.1-0ubuntu0) lmn7-testing; urgency=low
 
