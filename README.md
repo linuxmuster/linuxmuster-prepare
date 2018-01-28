@@ -29,7 +29,7 @@ Parameter | Wert | Bedeutung
 ### Profilvorgaben
 - Server:  
   - Paket _linuxmuster-base7_ mit allen seinen Abhängigkeiten wird installiert.
-  - Ist eine zweite Festplatte definiert und wird der Parameter `-l, --pvdevice=` angegeben, wird diese wie folgt mit LVM eingerichtet:  
+  - Ist eine zweite Festplatte definiert und wird der Parameter `-l, --pvdevice=<device>` angegeben, wird diese wie folgt mit LVM eingerichtet:  
 
 LV Name | LV Pfad | Mountpoint | Größe  
 --------|---------|------------|------  
@@ -38,7 +38,10 @@ linbo | /dev/vg_srv/linbo | /srv/linbo | 40G
 global | /dev/vg_srv/global | /srv/samba/global | 10G  
 default-school | /dev/vg_srv/default-school | /srv/samba/default-school | 40G  
 
-    Die Werte beziehen sich auf eine Festplattengröße von 100G. Für das LV _default-school_ wird immer der verbleibende Rest genommen. Die Größe muss daher mindestens 70G betragen.
+  - Die Werte beziehen sich auf eine Festplattengröße von 100G. Für das LV _default-school_ wird immer der verbleibende Rest genommen. Die Größe muss daher mindestens 70G betragen.
+- Opsi: Das Paket _linuxmuster-opsi_ mit allen seinen Abhängigkeiten wird installiert.
+- Docker: Die Pakete _docker_ und _docker-compose_ werden mit allen ihren Abhängigkeiten installiert.
+- None: Es werden keine zusätzliche Pakete installiert, Hostname muss mit Parameter `-t, --hostname=<hostname>` zwingend angegeben werden.
 
 ### Beispiele  
 - `lmn7-appliance.py -u -p server -l /dev/sdb`  
