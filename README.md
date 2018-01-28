@@ -17,19 +17,19 @@ Skripte und Konfigurationsvorlagen für die Vorbereitung einer virtuellen Applia
 ### Optionen
 Parameter | Wert | Bedeutung  
 ----------|------|----------  
-`-t, --hostname=` | [hostname] | Hostname der Appliance, falls weggelassen wird der Profilname verwendet.  
-`-n, --ipnet=` | [ip/bitmask] | IP-Adresse und Bitmaske des Hosts (Standardwert ist 10.0.0.[1,2,3]/16, abhängig vom Profil).  
-`-p, --profile=` | [server,opsi,docker,none] | Appliance-Profil, wurde -n nicht angegeben, wird die IP-Adresse automatisch gesetzt: server 10.0.0.1, opsi 10.0.0.2, docker 10.0.0.3. Bei "none" muss mit -n eine Adresse/Bitmaske angegeben werden.  
-`-l, --pvdevice=` | [device] | Pfad zum LVM-Device (nur bei Serverprofil).  
-`-f, --firewall=` | [ip] | Firewall-/Gateway-/Nameserver-Adresse (Standard x.x.x.254).  
-`-d, --domain=` | [domain] | Domänenname (Standard: linuxmuster.lan).  
+`-t, --hostname=` | `<hostname>` | Hostname der Appliance, falls weggelassen wird der Profilname verwendet.  
+`-n, --ipnet=` | `<ip/bitmask>` | IP-Adresse und Bitmaske des Hosts (Standardwert ist 10.0.0.[1,2,3]/16, abhängig vom Profil).  
+`-p, --profile=` | `<server,opsi,docker,none>` | Appliance-Profil, wurde -n nicht angegeben, wird die IP-Adresse automatisch gesetzt: server 10.0.0.1, opsi 10.0.0.2, docker 10.0.0.3. Bei "none" muss mit -n eine Adresse/Bitmaske angegeben werden.  
+`-l, --pvdevice=` | `<device>` | Pfad zum LVM-Device (nur bei Serverprofil).  
+`-f, --firewall=` | `<ip>` | Firewall-/Gateway-/Nameserver-Adresse (Standard x.x.x.254).  
+`-d, --domain=` | `<domain>` | Domänenname (Standard: linuxmuster.lan).  
 `-u, --unattended` | - | Keine Abfragen, verwende Standardwerte.  
 `-h, --help` | - | Hilfe anzeigen.  
 
 ### Profilvorgaben
 - Server:  
   - Paket _linuxmuster-base7_ mit allen seinen Abhängigkeiten wird installiert.
-  - Ist eine zweite Festplatte definiert und wird der Parameter `-l, --pvdevice=<device>` angegeben, wird diese wie folgt mit LVM eingerichtet:  
+  - Ist eine zweite Festplatte definiert und wird der Parameter `-l, --pvdevice=<device>` angegeben, wird diese wie folgt mit LVM eingerichtet (Werte beziehen sich auf eine Festplattengröße von 100G. Für das LV _default-school_ wird immer der verbleibende Rest genommen. Festplattengröße muss daher mindestens 70G betragen.):  
 
 LV Name | LV Pfad | Mountpoint | Größe  
 --------|---------|------------|------  
@@ -38,7 +38,6 @@ linbo | /dev/vg_srv/linbo | /srv/linbo | 40G
 global | /dev/vg_srv/global | /srv/samba/global | 10G  
 default-school | /dev/vg_srv/default-school | /srv/samba/default-school | 40G  
 
-  - Die Werte beziehen sich auf eine Festplattengröße von 100G. Für das LV _default-school_ wird immer der verbleibende Rest genommen. Die Größe muss daher mindestens 70G betragen.
 - Opsi: Das Paket _linuxmuster-opsi_ mit allen seinen Abhängigkeiten wird installiert.
 - Docker: Die Pakete _docker_ und _docker-compose_ werden mit allen ihren Abhängigkeiten installiert.
 - None: Es werden keine zusätzliche Pakete installiert, Hostname muss mit Parameter `-t, --hostname=<hostname>` zwingend angegeben werden.
