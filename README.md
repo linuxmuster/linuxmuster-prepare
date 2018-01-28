@@ -30,6 +30,7 @@ Parameter | Wert | Bedeutung
   - Paket _linuxmuster-base7_ mit allen seinen Abhängigkeiten wird installiert.
   - Ist eine zweite Festplatte definiert und wird die Option _-l_ angegeben, wird diese wie folgt mit LVM eingerichtet:
     LV Name         | LV Pfad                    | Mountpoint                | Größe  
+    ----------------|----------------------------|---------------------------|------
     var             | /dev/vg_srv/var            | /var                      |   10G  
     linbo           | /dev/vg_srv/linbo          | /srv/linbo                |   40G  
     global          | /dev/vg_srv/global         | /srv/samba/global         |   10G  
