@@ -16,6 +16,7 @@ Skripte und Konfigurationsvorlagen für die Vorbereitung einer virtuellen Applia
 
 # Optionen
 Parameter | Wert | Bedeutung  
+----------|------|----------  
 `-t, --hostname=` | [hostname] | Hostname der Appliance, falls weggelassen wird der Profilname verwendet.   `-n, --ipnet=` | [ip/bitmask] | IP-Adresse und Bitmaske des Hosts (Standardwert ist 10.0.0.[1,2,3]/16, abhängig vom Profil).  
 `-p, --profile=` | [server,opsi,docker,none] | Appliance-Profil, wurde -n nicht angegeben, wird die IP-Adresse automatisch gesetzt: server 10.0.0.1, opsi 10.0.0.2, docker 10.0.0.3. Bei "none" muss mit -n eine Adresse/Bitmaske angegeben werden.  
 `-l, --pvdevice=` | [device] | Pfad zum LVM-Device (nur bei Serverprofil).  
