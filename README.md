@@ -40,7 +40,7 @@ default-school | /dev/vg_srv/default-school | /srv/samba/default-school | 40G
 
 - Opsi: Das Paket _linuxmuster-opsi_ mit allen seinen Abhängigkeiten wird installiert.
 - Docker: Die Pakete _docker_ und _docker-compose_ werden mit allen ihren Abhängigkeiten installiert.
-- None: Es werden keine zusätzliche Pakete installiert, Hostname muss mit Parameter `-t, --hostname=<hostname>` zwingend angegeben werden.
+- None: Es werden keine zusätzliche Pakete installiert, Hostname mit Parameter `-t, --hostname=<hostname>` und IP/Netzmaske mit `-n, --ipnet=<ip/bitmask>` müssen zwingend angegeben werden.
 
 ### Beispiele  
 - `lmn7-appliance.py -u -p server -l /dev/sdb`  
@@ -48,13 +48,25 @@ default-school | /dev/vg_srv/default-school | /srv/samba/default-school | 40G
   - Hostname _server_,
   - IP/Bitmask _10.0.0.1/16_,
   - Domänenname _linuxmuster.lan_
-  - Gateway _10.0.0.254_
-- `lmn7-appliance.py -p docker -n 10.16.1.10/12 -d meineschule.de -u`
+  - Gateway/DNS _10.0.0.254_
+- `lmn7-appliance.py -p opsi -u`
+  - Richtet Opsiprofil mit Defaultwerten ein:
+  - Hostname: _opsi_
+  - IP/Bitmask: _10.0.0.2/16_
+  - Domänenname _linuxmuster.lan_
+  - Gateway/DNS _10.0.0.254_
+- `lmn7-appliance.py -p docker -n 10.16.1.3/12 -d meineschule.de -u`
   - Richtet Dockerhostprofil wie folgt ein:
   - Hostname _docker_,
-  - IP/Bitmask _10.16.1.10/12_,
+  - IP/Bitmask _10.16.1.3/12_,
   - Domänenname _meineschule.de_,
-  - Gateway _10.16.1.254_
+  - Gateway/DNS _10.16.1.254_
+- `lmn7-appliance.py -p none -t testhost -n 10.16.1.10/12`
+  - Richtet die Appliance wie folgt ein:
+  - Hostname _testhost_,
+  - IP/Bitmask _10.16.1.10/12_,
+  - Domänenname _linuxmuster.lan_,
+  - Gateway/DNS _10.16.1.254_
 
 ## Server-Appliance vorbereiten
 - Appliance mit 2 Festplatten einrichten, zum Beispiel:  
@@ -70,7 +82,6 @@ default-school | /dev/vg_srv/default-school | /srv/samba/default-school | 40G
 - Appliance herunterfahren und Snapshot erstellen.  
 
 ## Weitere Appliances vorbereiten
-
 - Opsi- und Docker-Appliances werden mit jeweils nur einer Festplatte erstellt.  
 - Die Vorgehensweise ist ansonsten analog zu derjenigen des Servers.
 - Opsi-Appliance:  
