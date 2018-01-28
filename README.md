@@ -29,12 +29,12 @@ Parameter | Wert | Bedeutung
 - Server:  
   - Paket _linuxmuster-base7_ mit allen seinen Abhängigkeiten wird installiert.
   - Ist eine zweite Festplatte definiert und wird die Option _-l_ angegeben, wird diese wie folgt mit LVM eingerichtet:
-    LV Name         | LV Pfad                    | Mountpoint                | Größe  
-    ----------------|----------------------------|---------------------------|------
-    var             | /dev/vg_srv/var            | /var                      |   10G  
-    linbo           | /dev/vg_srv/linbo          | /srv/linbo                |   40G  
-    global          | /dev/vg_srv/global         | /srv/samba/global         |   10G  
-    default-school  | /dev/vg_srv/default-school | /srv/samba/default-school |   40G  
+    LV Name | LV Pfad | Mountpoint | Größe  
+    --------|---------|------------|------
+    var | /dev/vg_srv/var | /var | 10G  
+    linbo | /dev/vg_srv/linbo | /srv/linbo | 40G  
+    global | /dev/vg_srv/global | /srv/samba/global | 10G  
+    default-school | /dev/vg_srv/default-school | /srv/samba/default-school | 40G  
     Die Werte beziehen sich auf eine Festplattengröße von 100G. Für das LV _default-school_ wird immer der verbleibende Rest genommen. Die Größe muss daher mindestens 70G betragen.
 
 # Beispiele  
