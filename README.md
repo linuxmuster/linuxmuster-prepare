@@ -14,7 +14,7 @@ Skripte und Konfigurationsvorlagen für die Vorbereitung einer virtuellen Applia
 - das root-Passwort auf _Muster!_ setzt und
 - im Falle des Serverprofils LVM einrichtet.
 
-# Optionen
+### Optionen
 Parameter | Wert | Bedeutung  
 ----------|------|----------  
 `-t, --hostname=` | [hostname] | Hostname der Appliance, falls weggelassen wird der Profilname verwendet.  
@@ -26,19 +26,19 @@ Parameter | Wert | Bedeutung
 `-u, --unattended` | - | Keine Abfragen, verwende Standardwerte.  
 `-h, --help` | - | Hilfe anzeigen.  
 
-# Profilvorgaben
+### Profilvorgaben
 - Server:  
   - Paket _linuxmuster-base7_ mit allen seinen Abhängigkeiten wird installiert.
   - Ist eine zweite Festplatte definiert und wird der Parameter `-l, --pvdevice=` angegeben, wird diese wie folgt mit LVM eingerichtet:  
-    LV Name | LV Pfad | Mountpoint | Größe  
-    --------|---------|------------|------  
-    var | /dev/vg_srv/var | /var | 10G  
-    linbo | /dev/vg_srv/linbo | /srv/linbo | 40G  
-    global | /dev/vg_srv/global | /srv/samba/global | 10G  
-    default-school | /dev/vg_srv/default-school | /srv/samba/default-school | 40G  
+LV Name | LV Pfad | Mountpoint | Größe  
+--------|---------|------------|------  
+var | /dev/vg_srv/var | /var | 10G  
+linbo | /dev/vg_srv/linbo | /srv/linbo | 40G  
+global | /dev/vg_srv/global | /srv/samba/global | 10G  
+default-school | /dev/vg_srv/default-school | /srv/samba/default-school | 40G  
     Die Werte beziehen sich auf eine Festplattengröße von 100G. Für das LV _default-school_ wird immer der verbleibende Rest genommen. Die Größe muss daher mindestens 70G betragen.
 
-# Beispiele  
+### Beispiele  
 - `lmn7-appliance.py -u -p server -l /dev/sdb`  
   - Richtet Serverprofil mit LVM auf 2. Festplatte mit Standardwerten ein:
   - Hostname _server_,
