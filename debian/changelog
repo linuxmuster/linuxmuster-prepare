@@ -1,5 +1,24 @@
+linuxmuster-prepare (0.2.0-0ubuntu0) lmn7-testing; urgency=low
+
+  * added lvm support.
+  * network interfaces configuration consolidated.
+  * removed dnsip query.
+  * added reboot option.
+  * added initial and setup options.
+  * set root password hard coded to 'Muster!'.
+  * removed root password option.
+  * updated README.md.
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Sun, 28 Jan 2018 13:41:15 +0100
+
+linuxmuster-prepare (0.1.1-0ubuntu0) lmn7-testing; urgency=low
+
+  * remove password query.
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Sat, 02 Dec 2017 15:52:25 +0100
+
 linuxmuster-prepare (0.1.0-0ubuntu0) lmn7-testing; urgency=low
 
   * initial release.
 
- -- Thomas Schmitt <thomas@linuxmuster.net>  Wed, 29 Nov 2017 15:52:31 +0100
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Sat, 02 Dec 2017 15:52:25 +0100

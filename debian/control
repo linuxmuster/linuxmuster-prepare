@@ -7,5 +7,5 @@ Standards-Version: 5.0.0
 
 Package: linuxmuster-prepare
 Architecture: all
-Depends: python3-ipy, python3-netifaces, ssh, vim, bash-completion, net-tools, ifupdown, resolvconf
+Depends: python3-ipy, python3-netifaces, python3-reconfigure, rsync, ssh, vim, bash-completion, lvm2, net-tools, ifupdown, resolvconf
 Description: linuxmuster.net pre setup configuration scripts

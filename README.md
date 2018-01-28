@@ -82,9 +82,4 @@ default-school | /dev/vg_srv/default-school | /srv/samba/default-school | 40G
 - Appliance herunterfahren und Snapshot erstellen.  
 
 ## Weitere Appliances vorbereiten
-- Opsi- und Docker-Appliances werden mit jeweils nur einer Festplatte erstellt.  
-- Die Vorgehensweise ist ansonsten analog zu derjenigen des Servers.
-- Opsi-Appliance:  
-`./lmn7-appliance.py -p opsi -u`
-- Docker-Appliance:  
-`./lmn7-appliance.py -p docker -u`  
+Opsi-, Docker- und weitere Appliances werden mit jeweils nur einer Festplatte erstellt. Die Vorgehensweise ist ansonsten analog zu derjenigen des Servers. Beispiele für Skriptaufrufe siehe oben.

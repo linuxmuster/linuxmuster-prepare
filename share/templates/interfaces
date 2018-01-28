@@ -1,7 +1,7 @@
 # /etc/network/interfaces
 #
 # thomas@linuxmuster.net
-# 20160914
+# 20171208
 #
 # This file describes the network interfaces available on your system
 # and how to activate them. For more information, see interfaces(5).
@@ -9,6 +9,17 @@
 # The loopback network interface
 auto lo
 iface lo inet loopback
+
+auto @@iface@@
+iface @@iface@@ inet static
+        address @@hostip@@
+        netmask @@netmask@@
+        network @@network@@
+        broadcast @@broadcast@@
+        gateway @@firewallip@@
+        # dns-* options are implemented by the resolvconf package, if installed
+        dns-nameservers @@serverip@@ @@firewallip@@
+        dns-search @@domainname@@
 
 # source other interface definitions
 source /etc/network/interfaces.d/*
