@@ -2,7 +2,7 @@
 #
 # lmn7-appliance.py
 # thomas@linuxmuster.net
-# 20180122
+# 20180209
 #
 
 import getopt
@@ -17,16 +17,15 @@ def usage(rc):
     print('a linuxmuster.net ubuntu appliance.\n')
     print('Usage: lmn7-appliance.py [options]')
     print('\n[options] are:\n')
-    print('-t, --hostname=<hostname>   : Hostname to apply, if ommitted the profile')
-    print('                              name will be applied.')
+    print('-t, --hostname=<hostname>   : Hostname to apply (optional, works only with')
+    print('                              server profile).')
     print('-n, --ipnet=<ip/bitmask>    : Ip address and bitmask assigned to the host')
     print('                              (optional, default is 10.0.0.x/16, depending')
     print('                              on the profile).')
-    print('-p, --profile=<profile>     : Host and software profile to apply. Allowed')
-    print('                              values are "server", "opsi", "docker" or "none".')
-    print('                              If option "-n" is not set standard ips ending with')
-    print('                              .1, .2 or .3 will be automatically assigned.')
-    print('                              If "-p" is not set option "-n" has to be set.')
+    print('-p, --profile=<profile>     : Host profile to apply, mandatory. Expected')
+    print('                              values are "server", "opsi", "docker" or "ubuntu".')
+    print('                              Profile name is also used as hostname, except for')
+    print('                              "server" if set with -t.')
     print('-l, --pvdevice=<device>     : Device to use for lvm (server profile only).')
     print('-f, --firewall=<firewallip> : Firewall/gateway ip (default *.254).')
     print('-d, --domain=<domainname>   : Domainname (default linuxmuster.lan).')
@@ -50,13 +49,14 @@ domainname = ''
 firewallip = ''
 ipnet = ''
 pvdevice = ''
+profile_list = ['server', 'opsi', 'docker', 'ubuntu']
 
 # evaluate options
 for o, a in opts:
     if o in ("-u", "--unattended"):
         unattended = ' -u'
     elif o in ("-p", "--profile"):
-        profile = ' -p ' + a
+        profile = a
     elif o in ("-t", "--hostname"):
         hostname = ' -t ' + a
     elif o in ("-l", "--pvdevice"):
@@ -73,9 +73,10 @@ for o, a in opts:
         assert False, "unhandled option"
         usage(1)
 
-if ipnet == '' and profile == '':
-    print('You need either -n or -p!\n')
+if not profile in profile_list or profile == '':
     usage(1)
+
+profile = ' -p ' + profile
 
 # repo data
 url = 'http://fleischsalat.linuxmuster.org/lmn7'

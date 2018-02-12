@@ -2,7 +2,7 @@
 #
 # linuxmuster-prepare.py
 # thomas@linuxmuster.net
-# 20180128
+# 20180209
 #
 
 import configparser
@@ -40,7 +40,7 @@ pkgs = ''
 ipnr = ''
 rootpw_default = 'Muster!'
 rootpw = 'Muster!'
-profile_list = ['server', 'opsi', 'docker']
+profile_list = ['server', 'opsi', 'docker', 'ubuntu']
 profile = ''
 pvdevice = ''
 vgname = 'vg_srv'
@@ -71,16 +71,15 @@ def usage(rc):
     print('-i, --initial               : Prepare the appliance initially for rollout.')
     print('-s, --setup                 : Further appliance setup (network, lvm and swapsize).')
     print('                              Note: You have to use either -i or -s.')
-    print('-t, --hostname=<hostname>   : Hostname to apply, if ommitted the profile')
-    print('                              name will be applied.')
+    print('-t, --hostname=<hostname>   : Hostname to apply (optional, works only with')
+    print('                              server profile).')
     print('-n, --ipnet=<ip/bitmask>    : Ip address and bitmask assigned to the host')
     print('                              (optional, default is 10.0.0.x/16, depending')
     print('                              on the profile).')
-    print('-p, --profile=<profile>     : Host and software profile to apply. Allowed')
-    print('                              values are "server", "opsi", "docker" or "none".')
-    print('                              If option "-i" is not set an ip ending in')
-    print('                              .1, .2 or .3 will be automatically assigned.')
-    print('                              If "-p" is not set option "-i" has to be set.')
+    print('-p, --profile=<profile>     : Host profile to apply, mandatory. Expected')
+    print('                              values are "server", "opsi", "docker" or "ubuntu".')
+    print('                              Profile name is also used as hostname, except for')
+    print('                              "server" if set with -t.')
     print('-l, --pvdevice=<device>     : Device to use for lvm (server profile only).')
     print('-f, --firewall=<firewallip> : Firewall/gateway ip (default *.*.*.254).')
     print('-d, --domain=<domainname>   : Domainname (default linuxmuster.lan).')
@@ -648,13 +647,14 @@ for o, a in opts:
         usage(1)
 
 # test values
-if hostname == '' and profile != '':
-    hostname = profile
-if hostname != '' and profile == '':
-    if hostname in profile_list:
-        profile = hostname
-if hostname == '':
+if not profile in profile_list or profile == '':
     usage(1)
+if profile != 'server':
+    pvdevice = ''
+    hostname = profile
+else:
+    if hostname == '':
+        hostname = 'server'
 if ipnet == '' and profile == '':
     usage(1)
 if setup == False and initial == False:
@@ -664,8 +664,6 @@ if setup == True and initial == True:
     print("-i and -s don't work together!")
     usage(1)
 # pvdevice
-if profile != 'server':
-    pvdevice = ''
 if pvdevice != '':
     if not pathlib.Path(pvdevice).is_block_device():
         print('# ' + pvdevice + 'is not a block device!')
@@ -711,7 +709,6 @@ elif setup:
 
 # write configs
 print('## writing configuration')
-#os.system('mkdir -p /etc/network/interfaces.d')
 os.system('mkdir -p ' + cachedir)
 for item in os.listdir(templates):
     rc, content = readTextfile(templates + '/' + item)
@@ -720,7 +717,6 @@ for item in os.listdir(templates):
     outfile = firstline.partition(' ')[2].replace('\n', '')
     # replace placeholders
     content = content.replace('@@iface@@', iface)
-    content = content.replace('@@serverip@@', serverip)
     content = content.replace('@@hostip@@', hostip)
     content = content.replace('@@hostname@@', hostname)
     content = content.replace('@@bitmask@@', bitmask)
@@ -731,6 +727,10 @@ for item in os.listdir(templates):
     content = content.replace('@@firewallip@@', firewallip)
     content = content.replace('@@domainname@@', domainname)
     content = content.replace('@@swapsize@@', swapsize)
+    if outfile == prepini and profile == 'server':
+        content = content.replace('@@serverip@@', hostip)
+    else:
+        content = content.replace('@@serverip@@', serverip)
     # add date string
     content = '# modified by linuxmuster-prepare at ' + dtStr() + '\n' + content
     # write outfile

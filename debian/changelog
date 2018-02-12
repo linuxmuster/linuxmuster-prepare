@@ -1,3 +1,16 @@
+linuxmuster-prepare (0.3.0-0ubuntu0) lmn7-testing; urgency=low
+
+  * hostname consolidation, fixed hostnames docker, opsi, ubuntu, only a server
+    hostname can be applied via -t option.
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Fri, 09 Feb 2018 15:33:59 +0100
+
+linuxmuster-prepare (0.2.1-0ubuntu0) lmn7-testing; urgency=low
+
+  * fixed serverip in prepare.ini.
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Mon, 29 Jan 2018 12:04:04 +0100
+
 linuxmuster-prepare (0.2.0-0ubuntu0) lmn7-testing; urgency=low
 
   * added lvm support.
