@@ -2,7 +2,7 @@
 #
 # linuxmuster-prepare.py
 # thomas@linuxmuster.net
-# 20180209
+# 20180213
 #
 
 import configparser
@@ -41,6 +41,7 @@ ipnr = ''
 rootpw_default = 'Muster!'
 rootpw = 'Muster!'
 profile_list = ['server', 'opsi', 'docker', 'ubuntu']
+user_list = ['linuxmuster', 'opsiadmin']
 profile = ''
 pvdevice = ''
 vgname = 'vg_srv'
@@ -474,9 +475,10 @@ def do_password(rootpw):
         print('OK!')
     else:
         print('Failed!')
-    if os.path.isdir('/home/linuxmuster'):
-        printr('# linuxmuster ... ')
-        rc = os.system('echo "linuxmuster:' + rootpw + '" | chpasswd')
+    for item in user_list:
+        if os.path.isdir('/home/' + item):
+            printr('# ' + item + ' ... ')
+            rc = os.system('echo "' + item + ':' + rootpw + '" | chpasswd')
         if rc == 0:
             print('OK!')
         else:
@@ -700,6 +702,8 @@ if initial:
         do_fstab_root(mountopts)
     do_password(rootpw)
     updates = do_updates(pkgs)
+    if profile == 'opsi':
+        os.system('linuxmuster-opsi --prepare')
 elif setup:
     ipnr, pkgs = do_profile(profile)
     iface, hostname, domainname, hostip, bitmask, netmask, network, broadcast, firewallip = do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broadcast, firewallip, hostname, domainname, unattended)
