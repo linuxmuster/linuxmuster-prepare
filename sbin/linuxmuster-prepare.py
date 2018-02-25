@@ -2,7 +2,7 @@
 #
 # linuxmuster-prepare.py
 # thomas@linuxmuster.net
-# 20180213
+# 20180225
 #
 
 import configparser
@@ -45,8 +45,8 @@ user_list = ['linuxmuster', 'opsiadmin']
 profile = ''
 pvdevice = ''
 vgname = 'vg_srv'
-lvmvols = [('var', '10G', '/var'), ('linbo', '40G', '/srv/linbo'), ('global', '10G', '/srv/samba/global'), ('default-school', '100%FREE', '/srv/samba/default-school')]
-mountopts = 'user_xattr,acl,usrquota,usrjquota=aquota.user,grpquota,grpjquota=aquota.group,jqfmt=vfsv0,barrier=1'
+lvmvols = [('var', '10G', '/var'), ('linbo', '40G', '/srv/linbo'), ('global', '10G', '/srv/samba/global'), ('default-school', '100%FREE', '/srv/samba/schools/default-school')]
+quotamntopts = 'user_xattr,acl,usrjquota=aquota.user,grpjquota=aquota.group,jqfmt=vfsv0,barrier=1'
 unattended = False
 ipset = False
 fwset = False
@@ -352,14 +352,14 @@ def do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broa
     return iface, hostname, domainname, hostip, bitmask, netmask, network, broadcast, firewallip
 
 # lvm
-def do_lvm(profile, pvdevice, vgname, lvmvols, mountopts):
+def do_lvm(pvdevice, vgname, lvmvols, quotamntopts):
     print('## LVM')
     # if volume group exists do nothing
     vgdisplay = os.popen('vgdisplay').read()
     if ' ' + vgname + '\n' in vgdisplay:
         pvdevice = os.popen("pvdisplay | grep 'PV Name' | awk '{ print $3 }'").read().replace('\n', '')
         print('# Volume group ' + vgname + ' with device ' + pvdevice + ' exists already!')
-        return pvdevice, True
+        return pvdevice
     # ask for pvdevice
     if not unattended:
         while True:
@@ -373,7 +373,7 @@ def do_lvm(profile, pvdevice, vgname, lvmvols, mountopts):
                 print("Invalid entry!")
     if pvdevice == '':
         # return if no pvdevice is entered
-        return pvdevice, False
+        return pvdevice
     rc, fstab = readTextfile('/etc/fstab')
     fstab = fstab + '\n'
     print('# Creating physical volume ' + pvdevice + '.')
@@ -401,7 +401,7 @@ def do_lvm(profile, pvdevice, vgname, lvmvols, mountopts):
             sys.exit(1)
         # set quota mount options
         if volname == 'global' or volname == 'default-school':
-            mntopts = mountopts
+            mntopts = quotamntopts
         else:
             mntopts = 'defaults'
         fstab = fstab + volpath + ' ' + volmnt + ' ext4 ' + mntopts + ' 0 1\n'
@@ -415,11 +415,11 @@ def do_lvm(profile, pvdevice, vgname, lvmvols, mountopts):
         sys.exit(1)
     if os.system('umount /mnt && rm -rf /var/* && mount -a') != 0:
         sys.exit(1)
-    return pvdevice, False
+    return pvdevice
 
-# add quota mount options to fstab
-def do_fstab_root(mountopts):
-    mountopts = mountopts + ',errors=remount-ro'
+# set quota mount options to fstab if no lvm is defined
+def do_fstab_root(quotamntopts):
+    mntopts = quotamntopts + ',errors=remount-ro'
     config = FSTabConfig(path='/etc/fstab')
     config.load()
     count = 0
@@ -429,10 +429,18 @@ def do_fstab_root(mountopts):
         #print('## Mountpoint ' + str(count) + ' ' + mp)
         if mp == '/':
             print('# Modifying mount options for "' + mp + '".')
-            config.tree.filesystems[count].options = mountopts
+            config.tree.filesystems[count].options = mntopts
             config.save()
-        #print('# Options: ' + config.tree.filesystems[count].options)
+            os.system('mount -o remount /')
+            break
         count += 1
+
+# activate quota on server partitions
+def do_quota():
+    print('# Activating quota.')
+    os.system('quotaoff -a')
+    os.system('quotacheck -cvuga')
+    os.system('quotaon -a')
 
 # swap file
 def do_swap(swapsize):
@@ -697,9 +705,10 @@ if initial:
     ipnr, pkgs = do_profile(profile)
     iface, hostname, domainname, hostip, bitmask, netmask, network, broadcast, firewallip = do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broadcast, firewallip, hostname, domainname, unattended)
     if profile == 'server':
-        pvdevice, vgexists =  do_lvm(profile, pvdevice, vgname, lvmvols, mountopts)
-    if profile == 'server' and pvdevice == '' and not vgexists:
-        do_fstab_root(mountopts)
+        pvdevice = do_lvm(pvdevice, vgname, lvmvols, quotamntopts)
+        if pvdevice == '':
+            do_fstab_root(quotamntopts)
+        do_quota()
     do_password(rootpw)
     updates = do_updates(pkgs)
     if profile == 'opsi':
