@@ -1,3 +1,12 @@
+linuxmuster-prepare (0.4.2-0ubuntu0) lmn7-testing; urgency=low
+
+  * added linuxmuster-nginx-proxy to docker packages.
+  * added -c|--createcert option to create self signed server certificate for
+    standalone docker appliances.
+  * create /etc/hostname before ssh keys.
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Mon, 12 Mar 2018 20:26:19 +0100
+
 linuxmuster-prepare (0.4.1-0ubuntu0) lmn7-testing; urgency=low
 
   * added quota support for server profile.

@@ -2,7 +2,7 @@
 #
 # linuxmuster-prepare.py
 # thomas@linuxmuster.net
-# 20180225
+# 20180312
 #
 
 import configparser
@@ -55,12 +55,18 @@ setup = False
 reboot = False
 updates = False
 iniread = False
+createcert = False
 sharedir = '/usr/share/linuxmuster/prepare'
 templates = sharedir + '/templates'
 repokey = sharedir + '/lmn7-repo.key'
 cachedir = '/var/cache/linuxmuster'
 prepini = cachedir + '/prepare.ini'
 setupini = '/var/lib/linuxmuster/setup.ini'
+dockerdir = '/srv/docker'
+ngnxpkg = 'linuxmuster-nginx-proxy'
+rltnpkg = 'linuxmuster-relution'
+rltndb = 'linuxmusterrelution_database_1'
+rltndir = dockerdir + '/' + rltnpkg
 
 
 ## functions start
@@ -81,6 +87,8 @@ def usage(rc):
     print('                              values are "server", "opsi", "docker" or "ubuntu".')
     print('                              Profile name is also used as hostname, except for')
     print('                              "server" if set with -t.')
+    print('-c, --createcert            : Create self signed server cert (to be used only')
+    print('                              in setup mode and with docker profile).')
     print('-l, --pvdevice=<device>     : Device to use for lvm (server profile only).')
     print('-f, --firewall=<firewallip> : Firewall/gateway ip (default *.*.*.254).')
     print('-d, --domain=<domainname>   : Domainname (default linuxmuster.lan).')
@@ -244,7 +252,7 @@ def do_profile(profile):
         pkgs = 'linuxmuster-opsi'
     elif profile == 'docker':
         ipnr = '3'
-        pkgs = 'docker docker-compose'
+        pkgs = 'docker docker-compose ' + ngnxpkg
     return ipnr, pkgs
 
 # network setup
@@ -507,6 +515,20 @@ def do_keys():
             print(' Failed!')
             sys.exit(1)
 
+# create ssl certs (docker only)
+def do_sslcert(profile, domainname):
+    print('## SSL certificate')
+    ssldir = '/etc/linuxmuster/ssl'
+    csrfile = ssldir + '/' + profile + '.csr'
+    keyfile = ssldir + '/' + profile + '.key.pem'
+    certfile = ssldir + '/' + profile + '.cert.pem'
+    days = '3653'
+    os.system('mkdir -p ' + ssldir)
+    os.system('openssl genrsa -out ' + keyfile + ' 2048')
+    os.system('chmod 640 ' + keyfile)
+    os.system('echo -e "\n\n\n' + domainname + '\n' + profile + '\n' + profile + '\n\n\n\n" | openssl req -new -key ' + keyfile + ' -out ' + csrfile)
+    os.system('openssl x509 -req -days ' + days + ' -in ' + csrfile + ' -signkey ' + keyfile + ' -out ' + certfile)
+
 # host specific software if internet connection is available
 def do_updates(pkgs):
     if not internet():
@@ -540,7 +562,7 @@ def print_values(profile, hostname, domainname, hostip, netmask, firewallip, ifa
 
 # get cli args
 try:
-    opts, args = getopt.getopt(sys.argv[1:], "a:bd:f:hil:n:p:r:st:uw:", ["rootpw=", "reboot", "domain=", "firewall=", "help", "initial", "pvdevice=", "ipnet=", "profile=", "serverip=", "setup", "hostname=", "unattended", "swapsize="])
+    opts, args = getopt.getopt(sys.argv[1:], "a:bcd:f:hil:n:p:r:st:uw:", ["rootpw=", "reboot", "createcert", "domain=", "firewall=", "help", "initial", "pvdevice=", "ipnet=", "profile=", "serverip=", "setup", "hostname=", "unattended", "swapsize="])
 except getopt.GetoptError as err:
     # print help information and exit:
     print(err) # will print something like "option -a not recognized"
@@ -619,6 +641,8 @@ if os.path.isfile(prepini):
 for o, a in opts:
     if o in ("-u", "--unattended"):
         unattended = True
+    elif o in ("-c", "--createcert"):
+        createcert = True
     elif o in ("-w", "--swapsize"):
         swapsize = str(a)
     elif o in ("-p", "--profile"):
@@ -673,6 +697,9 @@ if setup == False and initial == False:
 if setup == True and initial == True:
     print("-i and -s don't work together!")
     usage(1)
+if setup == False and profile != 'docker' and createcert == True:
+    print("-c can onyl be used together with -s and docker profile!")
+    usage(1)
 # pvdevice
 if pvdevice != '':
     if not pathlib.Path(pvdevice).is_block_device():
@@ -717,7 +744,11 @@ elif setup:
     ipnr, pkgs = do_profile(profile)
     iface, hostname, domainname, hostip, bitmask, netmask, network, broadcast, firewallip = do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broadcast, firewallip, hostname, domainname, unattended)
     do_swap(swapsize)
+    # hostname
+    writeTextfile('/etc/hostname', hostname + '.' + domainname, 'w')
     do_keys()
+    if profile == 'docker' and createcert:
+        do_sslcert(profile, domainname)
     do_password(rootpw)
 
 # write configs
@@ -748,8 +779,16 @@ for item in os.listdir(templates):
     content = '# modified by linuxmuster-prepare at ' + dtStr() + '\n' + content
     # write outfile
     writeTextfile(outfile, content, 'w')
-# hostname
-writeTextfile('/etc/hostname', hostname + '.' + domainname, 'w')
+
+# finally reconfigure docker containers
+if profile == 'docker' and setup and createcert:
+    print('## Reconfiguring docker containers')
+    os.system('dpkg-reconfigure ' + ngnxpkg)
+    os.system('systemctl stop ' + ngnxpkg + '.service')
+    if os.path.isdir(rltndir):
+        os.system('dpkg-reconfigure ' + rltnpkg)
+        os.system('systemctl stop ' + rltnpkg + '.service')
+        os.system('docker rm ' + rltndb)
 
 # print values
 print_values(profile, hostname, domainname, hostip, netmask, firewallip, iface, swapsize, pvdevice)
