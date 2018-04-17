@@ -1,0 +1,20 @@
+# /etc/netplan/01-netcfg.yaml
+#
+# thomas@linuxmuster.net
+# 20180404
+#
+# This file describes the network interfaces available on your system
+# For more information, see netplan(5).
+#
+
+network:
+  version: 2
+  ethernets:
+    @@iface@@:
+      dhcp4: no
+      dhcp6: no
+      addresses: [@@hostip@@/@@bitmask@@]
+      gateway4: @@firewallip@@
+      nameservers:
+        addresses: [@@serverip@@,@@firewallip@@]
+        @@dnssearch@@

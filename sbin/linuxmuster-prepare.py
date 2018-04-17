@@ -2,7 +2,7 @@
 #
 # linuxmuster-prepare.py
 # thomas@linuxmuster.net
-# 20180312
+# 20180404
 #
 
 import configparser
@@ -53,6 +53,7 @@ fwset = False
 initial = False
 setup = False
 reboot = False
+force = False
 updates = False
 iniread = False
 createcert = False
@@ -63,10 +64,11 @@ cachedir = '/var/cache/linuxmuster'
 prepini = cachedir + '/prepare.ini'
 setupini = '/var/lib/linuxmuster/setup.ini'
 dockerdir = '/srv/docker'
-ngnxpkg = 'linuxmuster-nginx-proxy'
-rltnpkg = 'linuxmuster-relution'
-rltndb = 'linuxmusterrelution_database_1'
-rltndir = dockerdir + '/' + rltnpkg
+srvpkgs = 'lvm2'
+xenialpkgs = 'resolvconf ifupdown'
+bionicpkgs = 'netplan.io'
+issuepkgs = [['xenial', xenialpkgs], ['bionic', bionicpkgs]]
+swapfile = '/swap.img'
 
 
 ## functions start
@@ -75,6 +77,7 @@ rltndir = dockerdir + '/' + rltnpkg
 def usage(rc):
     print('Usage: linuxmuster-prepare.py [options]')
     print('\n [options] are:\n')
+    print('-x, --force                 : Force run on an already configured system.')
     print('-i, --initial               : Prepare the appliance initially for rollout.')
     print('-s, --setup                 : Further appliance setup (network, lvm and swapsize).')
     print('                              Note: You have to use either -i or -s.')
@@ -232,6 +235,22 @@ def isValidHostIpv4(ip):
     except:
         return False
 
+# get issue name
+def getIssue():
+    rc, content = readTextfile('/etc/issue')
+    issue = content.split(' ')[1]
+    if issue > '17.10' or issue == 'Bionic':
+        return 'bionic'
+    else:
+        return 'xenial'
+
+# get issue specific packages
+def getIssuePkgs():
+    issue = getIssue()
+    for item in issuepkgs:
+        if item[0] == issue:
+            return item[1]
+
 # profile setup (server, opsi, docker)
 def do_profile(profile):
     print('## Profile')
@@ -246,19 +265,20 @@ def do_profile(profile):
                 print("Invalid entry!")
     if profile == 'server':
         ipnr = '1'
-        pkgs = 'linuxmuster-base7'
+        pkgs = 'linuxmuster-base7 ' + srvpkgs
     elif profile == 'opsi':
         ipnr = '2'
         pkgs = 'linuxmuster-opsi'
     elif profile == 'docker':
         ipnr = '3'
-        pkgs = 'docker docker-compose ' + ngnxpkg
+        pkgs = 'docker docker-compose linuxmuster-nginx-proxy'
+    pkgs = pkgs + ' ' + getIssuePkgs()
     return ipnr, pkgs
 
 # network setup
 def do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broadcast, firewallip, hostname, domainname, unattended):
     # interface
-    print('# Interface')
+    print('## Network')
     if iface != '' and not iface in iface_list:
         iface = ''
     if iface == '':
@@ -272,7 +292,6 @@ def do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broa
             else:
                 print("Invalid entry!")
     # ip address & netmask
-    print('# IP')
     if ipnet == '':
         ipnet = '10.0.0.' + ipnr + '/16'
     # correct ip address
@@ -306,7 +325,6 @@ def do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broa
     broadcast = IP(n).strNormal(3).split('-')[1]
     o1, o2, o3, o4 = hostip.split('.')
     # firewall ip
-    print('# Firewall')
     if firewallip == '':
         firewallip = o1 + '.' + o2 + '.' + o3 + '.254'
     if unattended:
@@ -323,7 +341,6 @@ def do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broa
             else:
                 print("Invalid entry!")
     # hostname
-    print('# Hostname')
     if not isValidHostname(hostname):
         hostname = ''
     if (unattended and hostname == '') or not unattended:
@@ -339,7 +356,6 @@ def do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broa
             else:
                 print("Invalid entry!")
     # domainname
-    print('# Domainname')
     if domainname == '':
         defaultdomain = 'linuxmuster.lan'
     else:
@@ -453,7 +469,6 @@ def do_quota():
 # swap file
 def do_swap(swapsize):
     print('## Swapfile')
-    swapfile = '/swapfile'
     gbsize = swapsize + 'G'
     if not os.path.isfile(swapfile):
         print('No swapfile found, skipping this step!')
@@ -560,18 +575,16 @@ def print_values(profile, hostname, domainname, hostip, netmask, firewallip, ifa
 ## functions end
 
 
+os.system('clear')
+print('### linuxmuster-prepare')
+
 # get cli args
 try:
-    opts, args = getopt.getopt(sys.argv[1:], "a:bcd:f:hil:n:p:r:st:uw:", ["rootpw=", "reboot", "createcert", "domain=", "firewall=", "help", "initial", "pvdevice=", "ipnet=", "profile=", "serverip=", "setup", "hostname=", "unattended", "swapsize="])
+    opts, args = getopt.getopt(sys.argv[1:], "a:bcd:f:hil:n:p:r:st:uw:x", ["rootpw=", "reboot", "createcert", "domain=", "firewall=", "help", "initial", "pvdevice=", "ipnet=", "profile=", "serverip=", "setup", "hostname=", "unattended", "swapsize=", "force"])
 except getopt.GetoptError as err:
     # print help information and exit:
     print(err) # will print something like "option -a not recognized"
     usage(2)
-
-# exit if system is already set up
-if os.path.isfile(setupini):
-    print("Don't do this on a already configured system!")
-    sys.exit(1)
 
 # read previously created prepare.ini
 if os.path.isfile(prepini):
@@ -641,6 +654,8 @@ if os.path.isfile(prepini):
 for o, a in opts:
     if o in ("-u", "--unattended"):
         unattended = True
+    elif o in ("-x", "--force"):
+        force = True
     elif o in ("-c", "--createcert"):
         createcert = True
     elif o in ("-w", "--swapsize"):
@@ -648,8 +663,6 @@ for o, a in opts:
     elif o in ("-p", "--profile"):
         if a in profile_list:
             profile = a
-        elif a == 'none':
-            profile = ''
         else:
             usage(1)
     elif o in ("-t", "--hostname"):
@@ -679,6 +692,14 @@ for o, a in opts:
     else:
         assert False, "unhandled option"
         usage(1)
+
+# exit if system is already set up
+if force:
+    print("## Force is given, skipping test for configured system.")
+else:
+    if os.path.isfile(setupini):
+        print("## Don't do this on an already configured system!")
+        sys.exit(1)
 
 # test values
 if not profile in profile_list or profile == '':
@@ -722,9 +743,6 @@ if len(iface_list) == 0:
     print('# No network interfaces found!')
     sys.exit(1)
 
-os.system('clear')
-print('### linuxmuster-prepare')
-
 # main
 if initial:
     serverip = ''
@@ -740,55 +758,68 @@ if initial:
     updates = do_updates(pkgs)
     if profile == 'opsi':
         os.system('linuxmuster-opsi --prepare')
+    writeTextfile('/etc/hostname', hostname + '.' + domainname, 'w')
+    dnssearch = ''
 elif setup:
     ipnr, pkgs = do_profile(profile)
     iface, hostname, domainname, hostip, bitmask, netmask, network, broadcast, firewallip = do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broadcast, firewallip, hostname, domainname, unattended)
     do_swap(swapsize)
-    # hostname
+    # write hostname before keys and certificates were created
     writeTextfile('/etc/hostname', hostname + '.' + domainname, 'w')
     do_keys()
     if profile == 'docker' and createcert:
         do_sslcert(profile, domainname)
     do_password(rootpw)
+    dnssearch = 'search: [' + domainname + ']'
 
-# write configs
-print('## writing configuration')
+# write configs, common and issue specific
+print('## Writing configuration')
 os.system('mkdir -p ' + cachedir)
-for item in os.listdir(templates):
-    rc, content = readTextfile(templates + '/' + item)
-    # extract oufile path from first line
-    firstline = re.findall(r'# .*\n', content)[0]
-    outfile = firstline.partition(' ')[2].replace('\n', '')
-    # replace placeholders
-    content = content.replace('@@iface@@', iface)
-    content = content.replace('@@hostip@@', hostip)
-    content = content.replace('@@hostname@@', hostname)
-    content = content.replace('@@bitmask@@', bitmask)
-    content = content.replace('@@netmask@@', netmask)
-    content = content.replace('@@network@@', network)
-    content = content.replace('@@broadcast@@', broadcast)
-    content = content.replace('@@profile@@', profile)
-    content = content.replace('@@firewallip@@', firewallip)
-    content = content.replace('@@domainname@@', domainname)
-    content = content.replace('@@swapsize@@', swapsize)
-    if outfile == prepini and profile == 'server':
-        content = content.replace('@@serverip@@', hostip)
-    else:
-        content = content.replace('@@serverip@@', serverip)
-    # add date string
-    content = '# modified by linuxmuster-prepare at ' + dtStr() + '\n' + content
-    # write outfile
-    writeTextfile(outfile, content, 'w')
+# delete cloud-init netcfg if present (we provide our own)
+if os.path.isdir('/etc/netplan') and getIssue() == 'bionic':
+    os.system('rm -f /etc/netplan/*.yaml')
+for tdir in [templates + '/common', templates + '/' + getIssue()]:
+    for item in os.listdir(tdir):
+        rc, content = readTextfile(tdir + '/' + item)
+        # extract oufile path from first line
+        firstline = re.findall(r'# .*\n', content)[0]
+        outfile = firstline.partition(' ')[2].replace('\n', '')
+        # replace placeholders
+        content = content.replace('@@iface@@', iface)
+        content = content.replace('@@hostip@@', hostip)
+        content = content.replace('@@hostname@@', hostname)
+        content = content.replace('@@bitmask@@', bitmask)
+        content = content.replace('@@netmask@@', netmask)
+        content = content.replace('@@network@@', network)
+        content = content.replace('@@broadcast@@', broadcast)
+        content = content.replace('@@profile@@', profile)
+        content = content.replace('@@firewallip@@', firewallip)
+        content = content.replace('@@domainname@@', domainname)
+        content = content.replace('@@dnssearch@@', dnssearch)
+        content = content.replace('@@swapsize@@', swapsize)
+        #content = content.replace('@@resolvconf@@', resolvconf)
+        if outfile == prepini and profile == 'server':
+            content = content.replace('@@serverip@@', hostip)
+        else:
+            content = content.replace('@@serverip@@', serverip)
+        # repair missing serverip in netcfg.yaml
+        content = content.replace('[,', '[')
+        # add date string
+        content = '# modified by linuxmuster-prepare at ' + dtStr() + '\n' + content
+        # write outfile
+        writeTextfile(outfile, content, 'w')
+
+# apply netplan configuration
+if getIssue() == 'bionic':
+    print('## Configuring netplan')
+    os.system('netplan generate')
+    os.system('netplan apply')
+os.system('hostname -b ' + hostname + '.' + domainname)
 
 # finally reconfigure docker containers
-if profile == 'docker' and setup and createcert:
+if profile == 'docker' and setup == True:
     print('## Reconfiguring docker containers')
-    os.system('dpkg-reconfigure ' + ngnxpkg)
-    os.system('systemctl stop ' + ngnxpkg + '.service')
-    if os.path.isdir(rltndir):
-        os.system('dpkg-reconfigure ' + rltnpkg)
-        os.system('systemctl stop ' + rltnpkg + '.service')
-        os.system('docker rm ' + rltndb)
+    os.system('cd ' + dockerdir + '; for i in linuxmuster-*; do dpkg-reconfigure "$i"; systemctl enable "$i"; done')
 
 # print values
 print_values(profile, hostname, domainname, hostip, netmask, firewallip, iface, swapsize, pvdevice)

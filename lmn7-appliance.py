@@ -2,7 +2,7 @@
 #
 # lmn7-appliance.py
 # thomas@linuxmuster.net
-# 20180209
+# 20180324
 #
 
 import getopt
