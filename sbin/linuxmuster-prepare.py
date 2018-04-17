@@ -2,7 +2,7 @@
 #
 # linuxmuster-prepare.py
 # thomas@linuxmuster.net
-# 20180404
+# 20180417
 #
 
 import configparser
@@ -61,8 +61,9 @@ sharedir = '/usr/share/linuxmuster/prepare'
 templates = sharedir + '/templates'
 repokey = sharedir + '/lmn7-repo.key'
 cachedir = '/var/cache/linuxmuster'
-prepini = cachedir + '/prepare.ini'
-setupini = '/var/lib/linuxmuster/setup.ini'
+libdir = '/var/lib/linuxmuster'
+prepini = libdir + '/prepare.ini'
+setupini = libdir + '/setup.ini'
 dockerdir = '/srv/docker'
 srvpkgs = 'lvm2'
 xenialpkgs = 'resolvconf ifupdown'
@@ -775,6 +776,7 @@ elif setup:
 # write configs, common and issue specific
 print('## Writing configuration')
 os.system('mkdir -p ' + cachedir)
+os.system('mkdir -p ' + libdir)
 # delete cloud-init netcfg if present (we provide our own)
 if os.path.isdir('/etc/netplan') and getIssue() == 'bionic':
     os.system('rm -f /etc/netplan/*.yaml')
