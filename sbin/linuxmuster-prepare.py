@@ -2,7 +2,7 @@
 #
 # linuxmuster-prepare.py
 # thomas@linuxmuster.net
-# 20180417
+# 20180418
 #
 
 import configparser
@@ -28,6 +28,10 @@ serverip = ''
 hostip = ''
 firewallip = ''
 ipnet = ''
+ipnet_default = '10.0.0.'
+bitmask_default = '16'
+ipnet_babo = '10.16.1.'
+bitmask_babo = '12'
 iface = ''
 iface_default = ''
 network = ''
@@ -48,7 +52,7 @@ vgname = 'vg_srv'
 lvmvols = [('var', '10G', '/var'), ('linbo', '40G', '/srv/linbo'), ('global', '10G', '/srv/samba/global'), ('default-school', '100%FREE', '/srv/samba/schools/default-school')]
 quotamntopts = 'user_xattr,acl,usrjquota=aquota.user,grpjquota=aquota.group,jqfmt=vfsv0,barrier=1'
 unattended = False
-ipset = False
+# ipset = False
 fwset = False
 initial = False
 setup = False
@@ -57,17 +61,17 @@ force = False
 updates = False
 iniread = False
 createcert = False
+setup_mode = ''
 sharedir = '/usr/share/linuxmuster/prepare'
 templates = sharedir + '/templates'
 repokey = sharedir + '/lmn7-repo.key'
-cachedir = '/var/cache/linuxmuster'
 libdir = '/var/lib/linuxmuster'
 prepini = libdir + '/prepare.ini'
 setupini = libdir + '/setup.ini'
 dockerdir = '/srv/docker'
 srvpkgs = 'lvm2'
 xenialpkgs = 'resolvconf ifupdown'
-bionicpkgs = 'netplan.io'
+bionicpkgs = 'netplan.io net-tools'
 issuepkgs = [['xenial', xenialpkgs], ['bionic', bionicpkgs]]
 swapfile = '/swap.img'
 
@@ -80,7 +84,7 @@ def usage(rc):
     print('\n [options] are:\n')
     print('-x, --force                 : Force run on an already configured system.')
     print('-i, --initial               : Prepare the appliance initially for rollout.')
-    print('-s, --setup                 : Further appliance setup (network, lvm and swapsize).')
+    print('-s, --setup                 : Further appliance setup (network, swapsize).')
     print('                              Note: You have to use either -i or -s.')
     print('-t, --hostname=<hostname>   : Hostname to apply (optional, works only with')
     print('                              server profile).')
@@ -93,7 +97,7 @@ def usage(rc):
     print('                              "server" if set with -t.')
     print('-c, --createcert            : Create self signed server cert (to be used only')
     print('                              in setup mode and with docker profile).')
-    print('-l, --pvdevice=<device>     : Device to use for lvm (server profile only).')
+    print('-l, --pvdevice=<device>     : Initially sets up lmv on the given device (server profile only).')
     print('-f, --firewall=<firewallip> : Firewall/gateway ip (default *.*.*.254).')
     print('-d, --domain=<domainname>   : Domainname (default linuxmuster.lan).')
     print('-r, --serverip=<serverip>   : Ip address of the server (only in unattended mode).')
@@ -101,6 +105,10 @@ def usage(rc):
     print('-a, --rootpw=<password>     : Set root password (only with -s).')
     print('-b, --reboot                : Reboots finally (only in unattended mode).')
     print('-u, --unattended            : Unattended mode, do not ask, use defaults.')
+    print('-e, --default               : Sets default (10.0.0.0/16) network addresses, triggers')
+    print('                              setup and unattended modes, needs profile (uses saved')
+    print('                              profile from initial run if not given).')
+    print('-o, --do-it-like-babo       : Like above, but uses babo (10.0.0.0/16) network addresses.')
     print('-h, --help                  : Print this help.')
     sys.exit(rc)
 
@@ -277,7 +285,7 @@ def do_profile(profile):
     return ipnr, pkgs
 
 # network setup
-def do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broadcast, firewallip, hostname, domainname, unattended):
+def do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broadcast, firewallip, hostname, domainname, unattended, setup_mode):
     # interface
     print('## Network')
     if iface != '' and not iface in iface_list:
@@ -293,15 +301,17 @@ def do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broa
             else:
                 print("Invalid entry!")
     # ip address & netmask
-    if ipnet == '':
-        ipnet = '10.0.0.' + ipnr + '/16'
+    if setup_mode == 'babo':
+        ipnet = ipnet_babo + ipnr + '/' + bitmask_babo
+    elif setup_mode == 'default' or ipnet == '':
+        ipnet = ipnet_default + ipnr + '/' + bitmask_default
     # correct ip address
     if '.0/' in ipnet and ipnr != '':
         ipnet = ipnet.replace('.0/', '.' + ipnr + '/')
     # if ip is still a network address
     if '.0/' in ipnet:
         ipnet = ''
-        defaultip = '10.0.0.1/16'
+        defaultip = ipnet_default + '1/' + bitmask_default
     else:
         defaultip = ipnet
     if (unattended and ipnet == '') or not unattended:
@@ -581,7 +591,7 @@ print('### linuxmuster-prepare')
 
 # get cli args
 try:
-    opts, args = getopt.getopt(sys.argv[1:], "a:bcd:f:hil:n:p:r:st:uw:x", ["rootpw=", "reboot", "createcert", "domain=", "firewall=", "help", "initial", "pvdevice=", "ipnet=", "profile=", "serverip=", "setup", "hostname=", "unattended", "swapsize=", "force"])
+    opts, args = getopt.getopt(sys.argv[1:], "a:bcd:ef:hil:n:op:r:st:uw:x", ["rootpw=", "reboot", "createcert", "domain=", "default", "firewall=", "help", "initial", "pvdevice=", "ipnet=", "profile=", "do-it-like-babo", "serverip=", "setup", "hostname=", "unattended", "swapsize=", "force"])
 except getopt.GetoptError as err:
     # print help information and exit:
     print(err) # will print something like "option -a not recognized"
@@ -592,69 +602,77 @@ if os.path.isfile(prepini):
     print('## Reading default values from a previous run:')
     prep = configparser.ConfigParser(inline_comment_prefixes=('#', ';'))
     prep.read(prepini)
-    try:
-        domainname_ini = prep.get('setup', 'domainname')
-        if domainname_ini != '':
-            domainname = domainname_ini
-            print('# domainname: ' + domainname)
-    except:
-        pass
-    try:
-        hostip_ini = prep.get('setup', 'hostip')
-        if hostip_ini != '':
-            hostip = hostip_ini
-            print('# hostip: ' + hostip)
-    except:
-        pass
-    try:
-        hostname_ini = prep.get('setup', 'hostname')
-        if hostname_ini != '':
-            hostname = hostname_ini
-            print('# hostname: ' + hostname)
-    except:
-        pass
+    # try:
+    #     domainname_ini = prep.get('setup', 'domainname')
+    #     if domainname_ini != '':
+    #         domainname = domainname_ini
+    #         print('# domainname: ' + domainname)
+    # except:
+    #     pass
+    # try:
+    #     hostip_ini = prep.get('setup', 'hostip')
+    #     if hostip_ini != '':
+    #         hostip = hostip_ini
+    #         print('# hostip: ' + hostip)
+    # except:
+    #     pass
+    # try:
+    #     hostname_ini = prep.get('setup', 'hostname')
+    #     if hostname_ini != '':
+    #         hostname = hostname_ini
+    #         print('# hostname: ' + hostname)
+    # except:
+    #     pass
     try:
         profile_ini = prep.get('setup', 'profile')
         if profile_ini != '':
-            profile = profile_ini
-            print('# profile: ' + profile)
+            # profile = profile_ini
+            print('# saved profile: ' + profile_ini)
     except:
         pass
-    try:
-        serverip_ini = prep.get('setup', 'serverip')
-        if serverip_ini != '':
-            serverip = serverip_ini
-            print('# serverip: ' + serverip)
-    except:
-        pass
-    try:
-        firewallip_ini = prep.get('setup', 'firewallip')
-        if firewallip_ini != '':
-            firewallip = firewallip_ini
-            print('# firewallip: ' + firewallip)
-    except:
-        pass
-    try:
-        bitmask_ini = prep.get('setup', 'bitmask')
-        if bitmask_ini != '':
-            bitmask = bitmask_ini
-            print('# bitmask: ' + bitmask)
-    except:
-        pass
-    try:
-        swapsize_ini = prep.get('setup', 'swapsize')
-        if swapsize_ini != '':
-            swapsize = swapsize_ini
-            print('# swapsize: ' + swapsize)
-    except:
-        pass
-    if hostip != '' and bitmask !='':
-        ipnet = hostip + '/' + bitmask
+    # try:
+    #     serverip_ini = prep.get('setup', 'serverip')
+    #     if serverip_ini != '':
+    #         serverip = serverip_ini
+    #         print('# serverip: ' + serverip)
+    # except:
+    #     pass
+    # try:
+    #     firewallip_ini = prep.get('setup', 'firewallip')
+    #     if firewallip_ini != '':
+    #         firewallip = firewallip_ini
+    #         print('# firewallip: ' + firewallip)
+    # except:
+    #     pass
+    # try:
+    #     bitmask_ini = prep.get('setup', 'bitmask')
+    #     if bitmask_ini != '':
+    #         bitmask = bitmask_ini
+    #         print('# bitmask: ' + bitmask)
+    # except:
+    #     pass
+    # try:
+    #     swapsize_ini = prep.get('setup', 'swapsize')
+    #     if swapsize_ini != '':
+    #         swapsize = swapsize_ini
+    #         print('# swapsize: ' + swapsize)
+    # except:
+    #     pass
+    # if hostip != '' and bitmask !='':
+    #     ipnet = hostip + '/' + bitmask
 
 # evaluate options
 for o, a in opts:
     if o in ("-u", "--unattended"):
         unattended = True
+    elif o in ("-e", "--default"):
+        setup_mode = 'default'
+        unattended = True
+        setup = True
+    elif o in ("-o", "--do-it-like-babo"):
+        setup_mode = 'babo'
+        unattended = True
+        setup = True
     elif o in ("-x", "--force"):
         force = True
     elif o in ("-c", "--createcert"):
@@ -684,7 +702,7 @@ for o, a in opts:
         rootpw = a
     elif o in ("-n", "--ipnet"):
         ipnet = a
-        ipset = True
+        # ipset = True
     elif o in ("-f", "--firewall"):
         firewallip = a
         fwset = True
@@ -703,7 +721,11 @@ else:
         sys.exit(1)
 
 # test values
+if setup_mode != '':
+    if profile == '' and profile_ini != '':
+        profile = profile_ini
 if not profile in profile_list or profile == '':
+    print('Invalid profile!')
     usage(1)
 if profile != 'server':
     pvdevice = ''
@@ -713,6 +735,9 @@ else:
         hostname = 'server'
 if ipnet == '' and profile == '':
     usage(1)
+if pvdevice != '' and initial == False:
+    print('LVM setup works only with -i!')
+    usage(1)
 if setup == False and initial == False:
     print('You have to provide either -i or -s!')
     usage(1)
@@ -720,7 +745,7 @@ if setup == True and initial == True:
     print("-i and -s don't work together!")
     usage(1)
 if setup == False and profile != 'docker' and createcert == True:
-    print("-c can onyl be used together with -s and docker profile!")
+    print("-c can only be used together with -s and docker profile!")
     usage(1)
 # pvdevice
 if pvdevice != '':
@@ -731,9 +756,9 @@ if pvdevice != '':
 if not str.isdigit(swapsize):
     usage(1)
 # override ini values if ipnet was set on cli
-if ipset:
-    if not fwset:
-        firewallip = ''
+# if ipset:
+#     if not fwset:
+#         firewallip = ''
 # do not set in interactive mode
 if unattended == False:
     reboot = False
@@ -749,7 +774,7 @@ if initial:
     serverip = ''
     rootpw = rootpw_default
     ipnr, pkgs = do_profile(profile)
-    iface, hostname, domainname, hostip, bitmask, netmask, network, broadcast, firewallip = do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broadcast, firewallip, hostname, domainname, unattended)
+    iface, hostname, domainname, hostip, bitmask, netmask, network, broadcast, firewallip = do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broadcast, firewallip, hostname, domainname, unattended, setup_mode)
     if profile == 'server':
         pvdevice = do_lvm(pvdevice, vgname, lvmvols, quotamntopts)
         if pvdevice == '':
@@ -763,7 +788,7 @@ if initial:
     dnssearch = ''
 elif setup:
     ipnr, pkgs = do_profile(profile)
-    iface, hostname, domainname, hostip, bitmask, netmask, network, broadcast, firewallip = do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broadcast, firewallip, hostname, domainname, unattended)
+    iface, hostname, domainname, hostip, bitmask, netmask, network, broadcast, firewallip = do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broadcast, firewallip, hostname, domainname, unattended, setup_mode)
     do_swap(swapsize)
     # write hostname before keys and certificates were created
     writeTextfile('/etc/hostname', hostname + '.' + domainname, 'w')
@@ -775,7 +800,6 @@ elif setup:
 
 # write configs, common and issue specific
 print('## Writing configuration')
-os.system('mkdir -p ' + cachedir)
 os.system('mkdir -p ' + libdir)
 # delete cloud-init netcfg if present (we provide our own)
 if os.path.isdir('/etc/netplan') and getIssue() == 'bionic':
