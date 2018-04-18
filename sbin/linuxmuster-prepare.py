@@ -569,6 +569,29 @@ def do_updates(pkgs):
     updates = True
     return updates
 
+# merge inifiles
+def mergeInis():
+    print('## Merging inifiles:')
+    setup = configparser.ConfigParser(inline_comment_prefixes=('#', ';'))
+    for item in [setupini, prepini]:
+        # skip non existant file
+        if not os.path.isfile(item):
+            print('# ' + item + ' not found!')
+            return False
+        # reading setup values
+        print('# Reading ' + item)
+        setup.read(item)
+    # writing setup.ini
+    print('# Writing ' + setupini)
+    try:
+        with open(setupini, 'w') as outfile:
+            setup.write(outfile)
+    except:
+        print('# Writing failed!')
+        return False
+    # remove prepare.ini
+    os.unlink(prepini)
+
 # print setup values
 def print_values(profile, hostname, domainname, hostip, netmask, firewallip, iface, swapsize, pvdevice):
     print('\n## The system has been prepared with the following values:')
@@ -597,11 +620,16 @@ except getopt.GetoptError as err:
     print(err) # will print something like "option -a not recognized"
     usage(2)
 
-# read previously created prepare.ini
+# read saved profile from previous run
+inifile = ''
 if os.path.isfile(prepini):
-    print('## Reading default values from a previous run:')
+    inifile = prepini
+elif os.path.isfile(setupini):
+    inifile = setupini
+if inifile != '':
+    print('## Reading profile from ' + inifile + ':')
     prep = configparser.ConfigParser(inline_comment_prefixes=('#', ';'))
-    prep.read(prepini)
+    prep.read(inifile)
     # try:
     #     domainname_ini = prep.get('setup', 'domainname')
     #     if domainname_ini != '':
@@ -834,6 +862,10 @@ for tdir in [templates + '/common', templates + '/' + getIssue()]:
         content = '# modified by linuxmuster-prepare at ' + dtStr() + '\n' + content
         # write outfile
         writeTextfile(outfile, content, 'w')
+
+# merge inifiles if setup.ini is present
+if os.path.isfile(setupini):
+    mergeInis()
 
 # apply netplan configuration
 if getIssue() == 'bionic':

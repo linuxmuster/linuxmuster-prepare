@@ -1,3 +1,9 @@
+linuxmuster-prepare (0.5.1-0ubuntu0) lmn7-testing; urgency=low
+
+* merging prepare.ini with setup.ini.
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Wed, 18 Apr 2018 15:02:50 +0200
+
 linuxmuster-prepare (0.5.0-0ubuntu0) lmn7-testing; urgency=low
 
   * moved prepare.ini to /var/lib/linuxmuster.
