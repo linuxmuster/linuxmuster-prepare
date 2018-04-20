@@ -2,7 +2,7 @@
 #
 # linuxmuster-prepare.py
 # thomas@linuxmuster.net
-# 20180418
+# 20180420
 #
 
 import configparser
@@ -872,7 +872,7 @@ if getIssue() == 'bionic':
     print('## Configuring netplan')
     os.system('netplan generate')
     os.system('netplan apply')
-os.system('hostname -b ' + hostname + '.' + domainname)
+os.system('hostnamectl set-hostname ' + hostname + '.' + domainname)
 
 # finally reconfigure docker containers
 if profile == 'docker' and setup == True:

@@ -1,6 +1,12 @@
+linuxmuster-prepare (0.5.2-0ubuntu0) lmn7-testing; urgency=low
+
+  * changed hostname setting to hostnamectl.
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Fri, 20 Apr 2018 11:34:53 +0200
+
 linuxmuster-prepare (0.5.1-0ubuntu0) lmn7-testing; urgency=low
 
-* merging prepare.ini with setup.ini.
+  * merging prepare.ini with setup.ini.
 
  -- Thomas Schmitt <thomas@linuxmuster.net>  Wed, 18 Apr 2018 15:02:50 +0200
 
