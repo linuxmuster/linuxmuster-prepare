@@ -1,3 +1,9 @@
+linuxmuster-prepare (0.5.3-0ubuntu0) lmn7-testing; urgency=low
+
+  * fixed help.
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Fri, 27 Apr 2018 14:57:08 +0200
+
 linuxmuster-prepare (0.5.2-0ubuntu0) lmn7-testing; urgency=low
 
   * changed hostname setting to hostnamectl.

@@ -2,7 +2,7 @@
 #
 # linuxmuster-prepare.py
 # thomas@linuxmuster.net
-# 20180420
+# 20180427
 #
 
 import configparser
@@ -108,7 +108,7 @@ def usage(rc):
     print('-e, --default               : Sets default (10.0.0.0/16) network addresses, triggers')
     print('                              setup and unattended modes, needs profile (uses saved')
     print('                              profile from initial run if not given).')
-    print('-o, --do-it-like-babo       : Like above, but uses babo (10.0.0.0/16) network addresses.')
+    print('-o, --do-it-like-babo       : Like above, but uses babo (10.16.0.0/12) network addresses.')
     print('-h, --help                  : Print this help.')
     sys.exit(rc)
 

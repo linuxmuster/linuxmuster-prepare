@@ -8,7 +8,8 @@ Skripte und Konfigurationsvorlagen für die Vorbereitung einer virtuellen Applia
 
 [lmn7-appliance.py](http://fleischsalat.linuxmuster.org/lmn7/lmn7-appliance.py) bereitet die Appliance für das Rollout vor:
 - Es bringt das Betriebssystem auf den aktuellen Stand,
-- lädt das linuxmuster-prepare-Paket nach,
+- installiert das Paket **linuxmuster-prepare** und
+- startet dann das Vorbereitungsskript _linuxmuster-prepare.py_,
 - das die für das jeweilige Appliance-Profil benötigten Pakete installiert,
 - das Netzwerk konfiguriert,
 - das root-Passwort auf _Muster!_ setzt und
