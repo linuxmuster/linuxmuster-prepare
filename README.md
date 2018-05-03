@@ -62,7 +62,7 @@ default-school | /dev/vg_srv/default-school | /srv/samba/default-school | 40G
   - IP/Bitmask _10.16.1.3/12_,
   - Domänenname _meineschule.de_,
   - Gateway/DNS _10.16.1.254_
-- `lmn7-appliance.py -p none -t testhost -n 10.16.1.10/12`
+- `lmn7-appliance.py -p ubuntu -t testhost -n 10.16.1.10/12`
   - Richtet die Appliance wie folgt ein:
   - Hostname _testhost_,
   - IP/Bitmask _10.16.1.10/12_,
@@ -73,7 +73,7 @@ default-school | /dev/vg_srv/default-school | /srv/samba/default-school | 40G
 - Appliance mit 2 Festplatten einrichten, zum Beispiel:  
   - HD 1: 25G (Root-Dateisystem)
   - HD 2: 100G (LVM)
-- [Ubuntu Server 17.10 Minimalinstallation](https://www.howtoforge.com/tutorial/ubuntu-minimal-server-install/) durchführen.  
+- [Ubuntu Server 18.04 Minimalinstallation](https://www.howtoforge.com/tutorial/ubuntu-minimal-server-install/) durchführen.  
   - System in eine Partition auf HD 1 installieren (keine Swappartition),
   - HD 2 unkonfiguriert lassen.
 - Nach dem ersten Boot als root einloggen und Prepare-Skript herunterladen:  

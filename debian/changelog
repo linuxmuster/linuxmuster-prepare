@@ -1,3 +1,9 @@
+linuxmuster-prepare (0.5.4-0ubuntu0) lmn7-testing; urgency=low
+
+  * added opsiadmin password set.
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Wed, 02 May 2018 08:55:23 +0200
+
 linuxmuster-prepare (0.5.3-0ubuntu0) lmn7-testing; urgency=low
 
   * fixed help.

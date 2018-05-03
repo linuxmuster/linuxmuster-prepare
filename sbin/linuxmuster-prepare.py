@@ -2,7 +2,7 @@
 #
 # linuxmuster-prepare.py
 # thomas@linuxmuster.net
-# 20180427
+# 20180502
 #
 
 import configparser
@@ -520,7 +520,10 @@ def do_password(rootpw):
     for item in user_list:
         if os.path.isdir('/home/' + item):
             printr('# ' + item + ' ... ')
-            rc = os.system('echo "' + item + ':' + rootpw + '" | chpasswd')
+            if item == 'opsiadmin':
+                rc = os.system('linuxmuster-opsi --password="' + rootpw + '"')
+            else:
+                rc = os.system('echo "' + item + ':' + rootpw + '" | chpasswd')
         if rc == 0:
             print('OK!')
         else:
@@ -808,10 +811,10 @@ if initial:
         if pvdevice == '':
             do_fstab_root(quotamntopts)
         do_quota()
-    do_password(rootpw)
     updates = do_updates(pkgs)
     if profile == 'opsi':
         os.system('linuxmuster-opsi --prepare')
+    do_password(rootpw)
     writeTextfile('/etc/hostname', hostname + '.' + domainname, 'w')
     dnssearch = ''
 elif setup:
