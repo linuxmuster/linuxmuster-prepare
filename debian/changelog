@@ -1,3 +1,11 @@
+linuxmuster-prepare (0.5.5-0ubuntu0) lmn7-testing; urgency=low
+
+  * added linuxmuster-distupgrade shell script.
+  * renamed linuxmuster-prepare.py to linuxmuster-prepare.
+  * renamed lmn7-appliance.py to lmn7-appliance.
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Fri, 04 May 2018 09:54:43 +0200
+
 linuxmuster-prepare (0.5.4-0ubuntu0) lmn7-testing; urgency=low
 
   * added opsiadmin password set.

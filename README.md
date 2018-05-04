@@ -6,10 +6,10 @@ Skripte und Konfigurationsvorlagen für die Vorbereitung einer virtuellen Applia
 
 ## Das Skript
 
-[lmn7-appliance.py](http://fleischsalat.linuxmuster.org/lmn7/lmn7-appliance.py) bereitet die Appliance für das Rollout vor:
+[lmn7-appliance](http://fleischsalat.linuxmuster.org/lmn7/lmn7-appliance) bereitet die Appliance für das Rollout vor:
 - Es bringt das Betriebssystem auf den aktuellen Stand,
 - installiert das Paket **linuxmuster-prepare** und
-- startet dann das Vorbereitungsskript _linuxmuster-prepare.py_,
+- startet dann das Vorbereitungsskript _linuxmuster-prepare_,
 - das die für das jeweilige Appliance-Profil benötigten Pakete installiert,
 - das Netzwerk konfiguriert,
 - das root-Passwort auf _Muster!_ setzt und
@@ -44,25 +44,25 @@ default-school | /dev/vg_srv/default-school | /srv/samba/default-school | 40G
 - ubuntu: Es werden keine zusätzliche Pakete installiert, Hostname mit Parameter `-t, --hostname=<hostname>` und IP/Netzmaske mit `-n, --ipnet=<ip/bitmask>` müssen zwingend angegeben werden.
 
 ### Beispiele  
-- `lmn7-appliance.py -u -p server -l /dev/sdb`  
+- `lmn7-appliance -u -p server -l /dev/sdb`  
   - Richtet Serverprofil mit LVM auf 2. Festplatte mit Standardwerten ein:
   - Hostname _server_,
   - IP/Bitmask _10.0.0.1/16_,
   - Domänenname _linuxmuster.lan_
   - Gateway/DNS _10.0.0.254_
-- `lmn7-appliance.py -p opsi -u`
+- `lmn7-appliance -p opsi -u`
   - Richtet Opsiprofil mit Defaultwerten ein:
   - Hostname: _opsi_
   - IP/Bitmask: _10.0.0.2/16_
   - Domänenname _linuxmuster.lan_
   - Gateway/DNS _10.0.0.254_
-- `lmn7-appliance.py -p docker -n 10.16.1.3/12 -d meineschule.de -u`
+- `lmn7-appliance -p docker -n 10.16.1.3/12 -d meineschule.de -u`
   - Richtet Dockerhostprofil wie folgt ein:
   - Hostname _docker_,
   - IP/Bitmask _10.16.1.3/12_,
   - Domänenname _meineschule.de_,
   - Gateway/DNS _10.16.1.254_
-- `lmn7-appliance.py -p ubuntu -t testhost -n 10.16.1.10/12`
+- `lmn7-appliance -p ubuntu -t testhost -n 10.16.1.10/12`
   - Richtet die Appliance wie folgt ein:
   - Hostname _testhost_,
   - IP/Bitmask _10.16.1.10/12_,

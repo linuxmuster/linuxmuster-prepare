@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 #
-# linuxmuster-prepare.py
+# linuxmuster-prepare
 # thomas@linuxmuster.net
 # 20180502
 #
@@ -80,7 +80,7 @@ swapfile = '/swap.img'
 
 # help
 def usage(rc):
-    print('Usage: linuxmuster-prepare.py [options]')
+    print('Usage: linuxmuster-prepare [options]')
     print('\n [options] are:\n')
     print('-x, --force                 : Force run on an already configured system.')
     print('-i, --initial               : Prepare the appliance initially for rollout.')

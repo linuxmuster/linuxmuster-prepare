@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 #
-# lmn7-appliance.py
+# lmn7-appliance
 # thomas@linuxmuster.net
-# 20180324
+# 20180504
 #
 
 import getopt
@@ -15,7 +15,7 @@ import urllib.request
 def usage(rc):
     print('Downloads and installs linuxmuster-prepare package and initially prepares')
     print('a linuxmuster.net ubuntu appliance.\n')
-    print('Usage: lmn7-appliance.py [options]')
+    print('Usage: lmn7-appliance [options]')
     print('\n[options] are:\n')
     print('-t, --hostname=<hostname>   : Hostname to apply (optional, works only with')
     print('                              server profile).')
@@ -118,5 +118,5 @@ urllib.request.urlretrieve(url + '/' + debfile, '/tmp/' + debfile)
 os.system('dpkg -i ' + '/tmp/' + debfile)
 
 # invoke script
-print('## invoke linuxmuster-prepare.py')
-os.system('linuxmuster-prepare.py -i' + unattended + profile + hostname + domainname + firewallip + ipnet + pvdevice)
+print('## invoke linuxmuster-prepare')
+os.system('linuxmuster-prepare -i' + unattended + profile + hostname + domainname + firewallip + ipnet + pvdevice)
