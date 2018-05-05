@@ -2,7 +2,7 @@
 #
 # linuxmuster-prepare
 # thomas@linuxmuster.net
-# 20180502
+# 20180505
 #
 
 import configparser
@@ -657,7 +657,7 @@ if inifile != '':
     try:
         profile_ini = prep.get('setup', 'profile')
         if profile_ini != '':
-            # profile = profile_ini
+            profile = profile_ini
             print('# saved profile: ' + profile_ini)
     except:
         pass
