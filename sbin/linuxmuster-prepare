@@ -2,7 +2,7 @@
 #
 # linuxmuster-prepare
 # thomas@linuxmuster.net
-# 20180505
+# 20180612
 #
 
 import configparser
@@ -27,6 +27,7 @@ hostname = ''
 serverip = ''
 hostip = ''
 firewallip = ''
+gateway = ''
 ipnet = ''
 ipnet_default = '10.0.0.'
 bitmask_default = '16'
@@ -98,7 +99,8 @@ def usage(rc):
     print('-c, --createcert            : Create self signed server cert (to be used only')
     print('                              in setup mode and with docker profile).')
     print('-l, --pvdevice=<device>     : Initially sets up lmv on the given device (server profile only).')
-    print('-f, --firewall=<firewallip> : Firewall/gateway ip (default *.*.*.254).')
+    print('-f, --firewall=<ip>         : Firewall ip address (default *.*.*.254).')
+    print('-g, --gateway=<ip>          : Gateway ip address (default is firewall ip).')
     print('-d, --domain=<domainname>   : Domainname (default linuxmuster.lan).')
     print('-r, --serverip=<serverip>   : Ip address of the server (only in unattended mode).')
     print('-w, --swapsize=<size>       : Swapfile size in GB (default "2").')
@@ -285,7 +287,7 @@ def do_profile(profile):
     return ipnr, pkgs
 
 # network setup
-def do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broadcast, firewallip, hostname, domainname, unattended, setup_mode):
+def do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broadcast, firewallip, gateway, hostname, domainname, unattended, setup_mode):
     # interface
     print('## Network')
     if iface != '' and not iface in iface_list:
@@ -345,9 +347,21 @@ def do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broa
     else:
         while True:
             defaultip = firewallip
-            firewallip = input('Enter gateway/firewall ip address [' + firewallip + ']: ')
+            firewallip = input('Enter firewall ip address [' + firewallip + ']: ')
             firewallip = firewallip or defaultip
             if isValidHostIpv4(firewallip):
+                break
+            else:
+                print("Invalid entry!")
+    # gateway ip
+    if gateway == '':
+        gateway = firewallip
+    if not unattended:
+        while True:
+            defaultip = gateway
+            gateway = input('Enter gateway ip address [' + gateway + ']: ')
+            gateway = gateway or defaultip
+            if isValidHostIpv4(gateway):
                 break
             else:
                 print("Invalid entry!")
@@ -384,7 +398,7 @@ def do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broa
                 break
             else:
                 print("Invalid entry!")
-    return iface, hostname, domainname, hostip, bitmask, netmask, network, broadcast, firewallip
+    return iface, hostname, domainname, hostip, bitmask, netmask, network, broadcast, firewallip, gateway
 
 # lvm
 def do_lvm(pvdevice, vgname, lvmvols, quotamntopts):
@@ -604,6 +618,7 @@ def print_values(profile, hostname, domainname, hostip, netmask, firewallip, ifa
     print('# IP        : ' + hostip)
     print('# Netmask   : ' + netmask)
     print('# Firewall  : ' + firewallip)
+    print('# Gateway   : ' + gateway)
     print('# Interface : ' + iface)
     print('# Swapsize  : ' + swapsize + 'G')
     if pvdevice != '':
@@ -617,7 +632,7 @@ print('### linuxmuster-prepare')
 
 # get cli args
 try:
-    opts, args = getopt.getopt(sys.argv[1:], "a:bcd:ef:hil:n:op:r:st:uw:x", ["rootpw=", "reboot", "createcert", "domain=", "default", "firewall=", "help", "initial", "pvdevice=", "ipnet=", "profile=", "do-it-like-babo", "serverip=", "setup", "hostname=", "unattended", "swapsize=", "force"])
+    opts, args = getopt.getopt(sys.argv[1:], "a:bcd:ef:g:hil:n:op:r:st:uw:x", ["rootpw=", "reboot", "createcert", "domain=", "default", "firewall=", "gateway=", "help", "initial", "pvdevice=", "ipnet=", "profile=", "do-it-like-babo", "serverip=", "setup", "hostname=", "unattended", "swapsize=", "force"])
 except getopt.GetoptError as err:
     # print help information and exit:
     print(err) # will print something like "option -a not recognized"
@@ -737,6 +752,8 @@ for o, a in opts:
     elif o in ("-f", "--firewall"):
         firewallip = a
         fwset = True
+    elif o in ("-g", "--gateway"):
+        gateway = a
     elif o in ("-h", "--help"):
         usage(0)
     else:
@@ -805,7 +822,7 @@ if initial:
     serverip = ''
     rootpw = rootpw_default
     ipnr, pkgs = do_profile(profile)
-    iface, hostname, domainname, hostip, bitmask, netmask, network, broadcast, firewallip = do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broadcast, firewallip, hostname, domainname, unattended, setup_mode)
+    iface, hostname, domainname, hostip, bitmask, netmask, network, broadcast, firewallip, gateway = do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broadcast, firewallip, gateway, hostname, domainname, unattended, setup_mode)
     if profile == 'server':
         pvdevice = do_lvm(pvdevice, vgname, lvmvols, quotamntopts)
         if pvdevice == '':
@@ -819,7 +836,7 @@ if initial:
     dnssearch = ''
 elif setup:
     ipnr, pkgs = do_profile(profile)
-    iface, hostname, domainname, hostip, bitmask, netmask, network, broadcast, firewallip = do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broadcast, firewallip, hostname, domainname, unattended, setup_mode)
+    iface, hostname, domainname, hostip, bitmask, netmask, network, broadcast, firewallip, gateway = do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broadcast, firewallip, gateway, hostname, domainname, unattended, setup_mode)
     do_swap(swapsize)
     # write hostname before keys and certificates were created
     writeTextfile('/etc/hostname', hostname + '.' + domainname, 'w')
@@ -851,6 +868,7 @@ for tdir in [templates + '/common', templates + '/' + getIssue()]:
         content = content.replace('@@broadcast@@', broadcast)
         content = content.replace('@@profile@@', profile)
         content = content.replace('@@firewallip@@', firewallip)
+        content = content.replace('@@gateway@@', gateway)
         content = content.replace('@@domainname@@', domainname)
         content = content.replace('@@dnssearch@@', dnssearch)
         content = content.replace('@@swapsize@@', swapsize)
