@@ -1,3 +1,10 @@
+linuxmuster-prepare (0.6.1-0ubuntu0) lmn7-testing; urgency=low
+
+  * added options --no-keys and --no-pw to be able to skip ssh key creation and
+    root password change.
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Wed, 13 Jun 2018 10:38:42 +0200
+
 linuxmuster-prepare (0.6.0-0ubuntu0) lmn7-testing; urgency=low
 
   * added gateway ip (needed for subnetting).

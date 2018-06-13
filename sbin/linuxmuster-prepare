@@ -2,7 +2,7 @@
 #
 # linuxmuster-prepare
 # thomas@linuxmuster.net
-# 20180612
+# 20180613
 #
 
 import configparser
@@ -62,6 +62,8 @@ force = False
 updates = False
 iniread = False
 createcert = False
+nokeys = False
+nopw = False
 setup_mode = ''
 sharedir = '/usr/share/linuxmuster/prepare'
 templates = sharedir + '/templates'
@@ -98,19 +100,25 @@ def usage(rc):
     print('                              "server" if set with -t.')
     print('-c, --createcert            : Create self signed server cert (to be used only')
     print('                              in setup mode and with docker profile).')
-    print('-l, --pvdevice=<device>     : Initially sets up lmv on the given device (server profile only).')
+    print('-l, --pvdevice=<device>     : Initially sets up lmv on the given device')
+    print('                              (server profile only).')
     print('-f, --firewall=<ip>         : Firewall ip address (default *.*.*.254).')
     print('-g, --gateway=<ip>          : Gateway ip address (default is firewall ip).')
     print('-d, --domain=<domainname>   : Domainname (default linuxmuster.lan).')
-    print('-r, --serverip=<serverip>   : Ip address of the server (only in unattended mode).')
+    print('-r, --serverip=<serverip>   : Ip address of the server (unattended mode only).')
     print('-w, --swapsize=<size>       : Swapfile size in GB (default "2").')
     print('-a, --rootpw=<password>     : Set root password (only with -s).')
     print('-b, --reboot                : Reboots finally (only in unattended mode).')
     print('-u, --unattended            : Unattended mode, do not ask, use defaults.')
-    print('-e, --default               : Sets default (10.0.0.0/16) network addresses, triggers')
-    print('                              setup and unattended modes, needs profile (uses saved')
-    print('                              profile from initial run if not given).')
-    print('-o, --do-it-like-babo       : Like above, but uses babo (10.16.0.0/12) network addresses.')
+    print('-e, --default               : Sets default (10.0.0.0/16) network addresses,')
+    print('                              triggers setup and unattended modes, needs profile')
+    print('                              (uses saved profile from initial run).')
+    print('-o, --do-it-like-babo       : Like above, but uses babo (10.16.0.0/12) network')
+    print('                              addresses.')
+    print('-j, --no-keys               : Do not create ssh keys')
+    print('                              (only in setup mode and together with -x).')
+    print('-k, --no-pw                 : Do not set admin password')
+    print('                              (only in setup mode and together with -x).')
     print('-h, --help                  : Print this help.')
     sys.exit(rc)
 
@@ -632,7 +640,7 @@ print('### linuxmuster-prepare')
 
 # get cli args
 try:
-    opts, args = getopt.getopt(sys.argv[1:], "a:bcd:ef:g:hil:n:op:r:st:uw:x", ["rootpw=", "reboot", "createcert", "domain=", "default", "firewall=", "gateway=", "help", "initial", "pvdevice=", "ipnet=", "profile=", "do-it-like-babo", "serverip=", "setup", "hostname=", "unattended", "swapsize=", "force"])
+    opts, args = getopt.getopt(sys.argv[1:], "a:bcd:ef:g:hijkl:n:op:r:st:uw:x", ["rootpw=", "reboot", "createcert", "domain=", "default", "firewall=", "gateway=", "help", "initial", "no-keys", "no-pw", "pvdevice=", "ipnet=", "profile=", "do-it-like-babo", "serverip=", "setup", "hostname=", "unattended", "swapsize=", "force"])
 except getopt.GetoptError as err:
     # print help information and exit:
     print(err) # will print something like "option -a not recognized"
@@ -740,6 +748,10 @@ for o, a in opts:
         reboot = True
     elif o in ("-i", "--initial"):
         initial = True
+    elif o in ("-j", "--no-keys"):
+        nokeys = True
+    elif o in ("-k", "--no-pw"):
+        nopw = True
     elif o in ("-s", "--setup"):
         setup = True
     elif o in ("-d", "--domain"):
@@ -795,6 +807,18 @@ if setup == True and initial == True:
 if setup == False and profile != 'docker' and createcert == True:
     print("-c can only be used together with -s and docker profile!")
     usage(1)
+if setup == False and nokeys == True:
+    print("-j can only be used in setup mode!")
+    usage(1)
+if force == False and nokeys == True:
+    print("-j can only be used together with -x!")
+    usage(1)
+if setup == False and nopw == True:
+    print("-k can only be used in setup mode!")
+    usage(1)
+if force == False and nopw == True:
+    print("-k can only be used together with -x!")
+    usage(1)
 # pvdevice
 if pvdevice != '':
     if not pathlib.Path(pvdevice).is_block_device():
@@ -840,10 +864,12 @@ elif setup:
     do_swap(swapsize)
     # write hostname before keys and certificates were created
     writeTextfile('/etc/hostname', hostname + '.' + domainname, 'w')
-    do_keys()
+    if not nokeys:
+        do_keys()
     if profile == 'docker' and createcert:
         do_sslcert(profile, domainname)
-    do_password(rootpw)
+    if not nopw:
+        do_password(rootpw)
     dnssearch = 'search: [' + domainname + ']'
 
 # write configs, common and issue specific
