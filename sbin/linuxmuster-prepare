@@ -2,7 +2,7 @@
 #
 # linuxmuster-prepare
 # thomas@linuxmuster.net
-# 20180613
+# 20180715
 #
 
 import configparser
@@ -878,6 +878,14 @@ os.system('mkdir -p ' + libdir)
 # delete cloud-init netcfg if present (we provide our own)
 if os.path.isdir('/etc/netplan') and getIssue() == 'bionic':
     os.system('rm -f /etc/netplan/*.yaml')
+# set hostname persistent
+cloudcfg = '/etc/cloud/cloud.cfg'
+replstr = 'preserve_hostname: false'
+if os.path.isfile(cloudcfg):
+    rc, content = readTextfile(cloudcfg)
+    if replstr in content:
+        content = content.replace(replstr, replstr.replace('false', 'true'))
+        rc = writeTextfile(cloudcfg, content, 'w')
 for tdir in [templates + '/common', templates + '/' + getIssue()]:
     for item in os.listdir(tdir):
         rc, content = readTextfile(tdir + '/' + item)

@@ -1,3 +1,9 @@
+linuxmuster-prepare (0.6.2-0ubuntu0) lmn7-testing; urgency=low
+
+  * fix, hostname does not persist after reboot (#1).
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Sun, 15 Jul 2018 10:40:35 +0200
+
 linuxmuster-prepare (0.6.1-0ubuntu0) lmn7-testing; urgency=low
 
   * added options --no-keys and --no-pw to be able to skip ssh key creation and
