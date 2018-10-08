@@ -2,7 +2,7 @@
 #
 # lmn7-appliance
 # thomas@linuxmuster.net
-# 20180504
+# 20181008
 #
 
 import getopt
@@ -83,7 +83,7 @@ url = 'http://fleischsalat.linuxmuster.org/lmn7'
 pkgsremote = url + '/Packages'
 pkgslocal = '/tmp/packages'
 pkgname = 'linuxmuster-prepare'
-rmpkgs = 'lxd lxd-client lxcfs lxc-common'
+rmpkgs = 'lxd lxd-client lxcfs lxc-common snapd'
 
 # return content of text file
 def readTextfile(tfile):
