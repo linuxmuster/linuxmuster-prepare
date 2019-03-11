@@ -1,3 +1,9 @@
+linuxmuster-prepare (0.6.4-0ubuntu0) lmn7-testing; urgency=low
+
+  * updated linuxmuster-opsi invokation due to opsi appliance upgrade.
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Fri, 08 Mar 2019 21:30:59 +0100
+
 linuxmuster-prepare (0.6.3-0ubuntu0) lmn7-testing; urgency=low
 
   * lmn7-appliance: remove snapd package on initial prepare.

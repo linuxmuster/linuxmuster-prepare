@@ -841,6 +841,7 @@ if len(iface_list) == 0:
     print('# No network interfaces found!')
     sys.exit(1)
 
+
 # main
 if initial:
     serverip = ''
@@ -853,10 +854,10 @@ if initial:
             do_fstab_root(quotamntopts)
         do_quota()
     updates = do_updates(pkgs)
+    # install necessary opsi pkgs
     if profile == 'opsi':
-        os.system('linuxmuster-opsi --prepare')
+        os.system('linuxmuster-opsi --install')
     do_password(rootpw)
-    writeTextfile('/etc/hostname', hostname + '.' + domainname, 'w')
     dnssearch = ''
 elif setup:
     ipnr, pkgs = do_profile(profile)
@@ -930,9 +931,13 @@ if getIssue() == 'bionic':
 os.system('hostnamectl set-hostname ' + hostname + '.' + domainname)
 
 # finally reconfigure docker containers
-if profile == 'docker' and setup == True:
+if profile == 'docker' and setup:
     print('## Reconfiguring docker containers')
     os.system('cd ' + dockerdir + '; for i in linuxmuster-*; do dpkg-reconfigure "$i"; systemctl enable "$i"; done')
+
+# prepare opsi appliance
+if profile == 'opsi' and initial:
+    os.system('linuxmuster-opsi --prepare')
 
 # print values
 print_values(profile, hostname, domainname, hostip, netmask, firewallip, iface, swapsize, pvdevice)
