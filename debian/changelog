@@ -1,3 +1,9 @@
+linuxmuster-prepare (0.6.5-0ubuntu0) lmn7-testing; urgency=low
+
+  * added activation of serial console in initial prepare.
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Mon, 18 Mar 2019 12:52:51 +0100
+
 linuxmuster-prepare (0.6.4-0ubuntu0) lmn7-testing; urgency=low
 
   * updated linuxmuster-opsi invokation due to opsi appliance upgrade.

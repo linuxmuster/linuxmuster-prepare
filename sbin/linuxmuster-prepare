@@ -2,7 +2,7 @@
 #
 # linuxmuster-prepare
 # thomas@linuxmuster.net
-# 20180715
+# 20190318
 #
 
 import configparser
@@ -854,6 +854,9 @@ if initial:
             do_fstab_root(quotamntopts)
         do_quota()
     updates = do_updates(pkgs)
+    # activate serial console
+    os.system('systemctl enable serial-getty@ttyS0.service')
+    os.system('systemctl start serial-getty@ttyS0.service')
     # install necessary opsi pkgs
     if profile == 'opsi':
         os.system('linuxmuster-opsi --install')
@@ -937,6 +940,7 @@ if profile == 'docker' and setup:
 
 # prepare opsi appliance
 if profile == 'opsi' and initial:
+    print('## Preparing opsi system')
     os.system('linuxmuster-opsi --prepare')
 
 # print values
