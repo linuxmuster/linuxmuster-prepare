@@ -2,7 +2,7 @@
 #
 # lmn7-appliance
 # thomas@linuxmuster.net
-# 20181008
+# 20190325
 #
 
 import getopt
@@ -79,7 +79,7 @@ if not profile in profile_list or profile == '':
 profile = ' -p ' + profile
 
 # repo data
-url = 'http://fleischsalat.linuxmuster.org/lmn7'
+url = 'https://archive.linuxmuster.net/lmn7'
 pkgsremote = url + '/Packages'
 pkgslocal = '/tmp/packages'
 pkgname = 'linuxmuster-prepare'

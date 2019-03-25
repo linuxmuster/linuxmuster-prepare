@@ -1,2 +1,2 @@
-deb http://fleischsalat.linuxmuster.org/lmn7/ ./
-deb-src http://fleischsalat.linuxmuster.org/lmn7/ ./
+deb https://archive.linuxmuster.net lmn7/
+deb-src https://archive.linuxmuster.net lmn7/

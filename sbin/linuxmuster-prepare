@@ -2,7 +2,7 @@
 #
 # linuxmuster-prepare
 # thomas@linuxmuster.net
-# 20190318
+# 20190325
 #
 
 import configparser
@@ -67,7 +67,6 @@ nopw = False
 setup_mode = ''
 sharedir = '/usr/share/linuxmuster/prepare'
 templates = sharedir + '/templates'
-repokey = sharedir + '/lmn7-repo.key'
 libdir = '/var/lib/linuxmuster'
 prepini = libdir + '/prepare.ini'
 setupini = libdir + '/setup.ini'
@@ -122,12 +121,12 @@ def usage(rc):
     print('-h, --help                  : Print this help.')
     sys.exit(rc)
 
-# test internet connection by google dns
-def internet(host="8.8.8.8", port=53, timeout=3):
+# test internet connection by archive.linuxmuster.net
+def internet(host="archive.linuxmuster.net", port=443, timeout=3):
     """
-    Host: 8.8.8.8 (google-public-dns-a.google.com)
-    OpenPort: 53/tcp
-    Service: domain (DNS/TCP)
+    Host: archive.linuxmuster.net
+    OpenPort: 443/tcp
+    Service: https (http protocol over TLS/SSL)
     """
     try:
         socket.setdefaulttimeout(timeout)
@@ -586,7 +585,6 @@ def do_updates(pkgs):
         print('# No internet connection!')
         sys.exit(1)
     print('## Installing updates and host specific software')
-    os.system('apt-key add ' + repokey)
     os.system('apt update')
     os.system('DEBIAN_FRONTEND=noninteractive apt -y dist-upgrade')
     os.system('DEBIAN_FRONTEND=noninteractive apt -y --allow-unauthenticated install ' + pkgs)

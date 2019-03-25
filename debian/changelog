@@ -1,3 +1,11 @@
+linuxmuster-prepare (0.7.0-0ubuntu0) lmn7; urgency=low
+
+  * changed to lmn7 repo with gpg key.
+  * switched to new official repo archive.linuxmuster.net.
+  * fix #4: test internet connection now by archive.linuxmuster.net.
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Mon, 25 Mar 2019 13:38:26 +0100
+
 linuxmuster-prepare (0.6.5-0ubuntu0) lmn7-testing; urgency=low
 
   * added activation of serial console in initial prepare.
