@@ -1,3 +1,9 @@
+linuxmuster-prepare (0.7.1-0ubuntu0) lmn7; urgency=low
+
+  * updated repo key archive.linuxmuster.net.gpg.
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Mon, 25 Mar 2019 21:14:33 +0100
+
 linuxmuster-prepare (0.7.0-0ubuntu0) lmn7; urgency=low
 
   * changed to lmn7 repo with gpg key.

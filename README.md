@@ -6,7 +6,7 @@ Skripte und Konfigurationsvorlagen für die Vorbereitung einer virtuellen Applia
 
 ## Das Skript
 
-[lmn7-appliance](http://fleischsalat.linuxmuster.org/lmn7/lmn7-appliance) bereitet die Appliance für das Rollout vor:
+[lmn7-appliance](https://archive.linuxmuster.net/lmn7/lmn7-appliance) bereitet die Appliance für das Rollout vor:
 - Es bringt das Betriebssystem auf den aktuellen Stand,
 - installiert das Paket **linuxmuster-prepare** und
 - startet dann das Vorbereitungsskript _linuxmuster-prepare_,
@@ -77,7 +77,7 @@ default-school | /dev/vg_srv/default-school | /srv/samba/default-school | 40G
   - System in eine Partition auf HD 1 installieren (keine Swappartition),
   - HD 2 unkonfiguriert lassen.
 - Nach dem ersten Boot als root einloggen und Prepare-Skript herunterladen:  
-`# wget http://fleischsalat.linuxmuster.org/lmn7/lmn7-appliance.py`
+`# wget https://archive.linuxmuster.net/lmn7/lmn7-appliance`
 - Skript ausführbar machen und starten:  
 `./lmn7-appliance.py -p server -u -l /dev/sdb`  
 - Appliance herunterfahren und Snapshot erstellen.  
