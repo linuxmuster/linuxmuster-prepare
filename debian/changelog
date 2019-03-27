@@ -1,3 +1,21 @@
+linuxmuster-prepare (0.7.4-0ubuntu0) lmn7; urgency=low
+
+  * further lmn7-appliance fix.
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Wed, 27 Mar 2019 20:47:56 +0100
+
+linuxmuster-prepare (0.7.3-0ubuntu0) lmn7; urgency=low
+
+  * lmn7-appliance fix.
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Mon, 25 Mar 2019 21:14:33 +0100
+
+linuxmuster-prepare (0.7.2-0ubuntu0) lmn7; urgency=low
+
+  * Fix #5: prepare script fails with new package server.
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Mon, 25 Mar 2019 21:14:33 +0100
+
 linuxmuster-prepare (0.7.1-0ubuntu0) lmn7; urgency=low
 
   * updated repo key archive.linuxmuster.net.gpg.

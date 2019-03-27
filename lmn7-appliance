@@ -2,12 +2,11 @@
 #
 # lmn7-appliance
 # thomas@linuxmuster.net
-# 20190325
+# 20190327
 #
 
 import getopt
 import os
-import re
 import sys
 import urllib.request
 
@@ -79,9 +78,12 @@ if not profile in profile_list or profile == '':
 profile = ' -p ' + profile
 
 # repo data
-url = 'https://archive.linuxmuster.net/lmn7'
-pkgsremote = url + '/Packages'
-pkgslocal = '/tmp/packages'
+url = 'https://archive.linuxmuster.net/'
+repokey = 'archive.linuxmuster.net.gpg'
+repokey_remote = url + repokey
+repokey_local = '/etc/apt/trusted.gpg.d/' + repokey
+lmn7list_remote = url + 'lmn7/lmn7.list'
+lmn7list_local = '/etc/apt/sources.list.d/lmn7.list'
 pkgname = 'linuxmuster-prepare'
 rmpkgs = 'lxd lxd-client lxcfs lxc-common snapd'
 
@@ -100,6 +102,11 @@ def readTextfile(tfile):
 
 print('### lmn7-prepare')
 
+# install lmn7 repo
+print('## install lmn7 repo')
+urllib.request.urlretrieve(repokey_remote, repokey_local)
+urllib.request.urlretrieve(lmn7list_remote, lmn7list_local)
+
 # get updates
 print('## install software updates')
 os.system('apt clean')
@@ -109,13 +116,7 @@ os.system('DEBIAN_FRONTEND=noninteractive apt -y dist-upgrade')
 
 # get lmn7 packages
 print('## install linuxmuster-prepare package')
-urllib.request.urlretrieve(pkgsremote, pkgslocal)
-rc, content = readTextfile(pkgslocal)
-debfile = re.findall(r'\nFilename: ./' + pkgname + '.*\n', content)[0].split('/')[1].replace('\n', '')
-depends = re.findall(r'\nDepends: .*\nFilename: ./' + pkgname + '.*\n', content)[0].split('\n')[1].split(':')[1].replace(',', '')
-os.system('DEBIAN_FRONTEND=noninteractive apt -y install ' + depends)
-urllib.request.urlretrieve(url + '/' + debfile, '/tmp/' + debfile)
-os.system('dpkg -i ' + '/tmp/' + debfile)
+os.system('DEBIAN_FRONTEND=noninteractive echo -e "y\ny\ny\n" | apt -y install ' + pkgname)
 
 # invoke script
 print('## invoke linuxmuster-prepare')
