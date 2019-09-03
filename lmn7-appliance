@@ -79,9 +79,9 @@ profile = ' -p ' + profile
 
 # repo data
 url = 'https://archive.linuxmuster.net/'
-repokey = 'archive.linuxmuster.net.gpg'
+repokey = 'archive.linuxmuster.net.key'
 repokey_remote = url + repokey
-repokey_local = '/etc/apt/trusted.gpg.d/' + repokey
+repokey_local = '/tmp/' + repokey
 lmn7list_remote = url + 'lmn7/lmn7.list'
 lmn7list_local = '/etc/apt/sources.list.d/lmn7.list'
 pkgname = 'linuxmuster-prepare'
