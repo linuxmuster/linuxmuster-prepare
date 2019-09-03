@@ -2,7 +2,7 @@
 #
 # lmn7-appliance
 # thomas@linuxmuster.net
-# 20190327
+# 20190903
 #
 
 import getopt
@@ -106,6 +106,7 @@ print('### lmn7-prepare')
 print('## install lmn7 repo')
 urllib.request.urlretrieve(repokey_remote, repokey_local)
 urllib.request.urlretrieve(lmn7list_remote, lmn7list_local)
+os.system('apt-key add ' + repokey_local)
 
 # get updates
 print('## install software updates')
