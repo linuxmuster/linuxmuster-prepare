@@ -290,6 +290,9 @@ def do_profile(profile):
     elif profile == 'docker':
         ipnr = '3'
         pkgs = 'docker docker-compose linuxmuster-nginx-proxy'
+    elif profile == 'ubuntu': 
+        ipnr = '21'
+        pkgs = ''
     pkgs = pkgs + ' ' + getIssuePkgs()
     return ipnr, pkgs
 
