@@ -10,6 +10,10 @@ import os
 import sys
 import urllib.request
 
+# check if the user and go on
+if not os.geteuid() == 0:
+    sys.exit('Please start the script as root user.\n You can use the command "sudo -i" to achieve this.')
+
 # help
 def usage(rc):
     print('Downloads and installs linuxmuster-prepare package and initially prepares')
