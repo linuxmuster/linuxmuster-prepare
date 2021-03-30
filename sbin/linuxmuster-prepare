@@ -820,7 +820,7 @@ if force == False and nopw == True:
 # pvdevice
 if pvdevice != '':
     if not pathlib.Path(pvdevice).is_block_device():
-        print('# ' + pvdevice + 'is not a block device!')
+        print(f'# {pvdevice} is not a block device!')
         sys.exit(1)
 # swapsize
 if not str.isdigit(swapsize):
