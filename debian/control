@@ -7,5 +7,5 @@ Standards-Version: 5.0.0
 
 Package: linuxmuster-prepare
 Architecture: all
-Depends: net-tools, python3-ipy, python3-netifaces, python3-reconfigure, quota, rsync, ssh, vim, bash-completion
+Depends: net-tools, python3-ipy, python3-netifaces, python3-pip, quota, rsync, ssh, vim, bash-completion
 Description: linuxmuster.net pre setup configuration scripts

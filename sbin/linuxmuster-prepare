@@ -2,7 +2,7 @@
 #
 # linuxmuster-prepare
 # thomas@linuxmuster.net
-# 20190325
+# 20210330
 #
 
 import configparser
@@ -19,7 +19,6 @@ import sys
 
 from IPy import IP
 from reconfigure.configs import FSTabConfig
-from reconfigure.items.fstab import FilesystemData
 
 
 # global values
@@ -290,7 +289,7 @@ def do_profile(profile):
     elif profile == 'docker':
         ipnr = '3'
         pkgs = 'docker docker-compose linuxmuster-nginx-proxy'
-    elif profile == 'ubuntu': 
+    elif profile == 'ubuntu':
         ipnr = '21'
         pkgs = ''
     pkgs = pkgs + ' ' + getIssuePkgs()
@@ -498,7 +497,7 @@ def do_fstab_root(quotamntopts):
 def do_quota():
     print('# Activating quota.')
     os.system('quotaoff -a')
-    os.system('quotacheck -cvuga')
+    os.system('quotacheck -cvugam')
     os.system('quotaon -a')
 
 # swap file
