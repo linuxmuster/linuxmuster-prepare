@@ -1,3 +1,11 @@
+linuxmuster-prepare (0.7.5-0ubuntu0) lmn7; urgency=low
+
+  * merged #9: fix missing ubuntu profile.
+  * merged #11: Added missing space.
+  * merged #15: check if root user is used.
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Tue, 30 Mar 2021 13:19:08 +0200
+
 linuxmuster-prepare (0.7.4-0ubuntu0) lmn7; urgency=low
 
   * further lmn7-appliance fix.
