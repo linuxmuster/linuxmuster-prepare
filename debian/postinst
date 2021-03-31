@@ -24,7 +24,7 @@ case "$1" in
   configure)
     # ensure python3 reconfigure is installed
     echo -n "Checking for python3-reconfigure ... "
-    if /usr/bin/pip3 list | grep ^reconfigure &> /dev/null; then
+    if /usr/local/bin/pip3 list | grep ^reconfigure &> /dev/null; then
       echo "installed."
       exit 0
     else
@@ -32,7 +32,7 @@ case "$1" in
     fi
 
     # install python3 reconfigure
-    /usr/bin/pip3 install reconfigure
+    /usr/local/bin/pip3 install reconfigure
 
   ;;
 
