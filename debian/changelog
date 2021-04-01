@@ -1,3 +1,9 @@
+linuxmuster-prepare (0.7.6-1ubuntu0) lmn7; urgency=low
+
+  * invoke "/usr/bin/python3 -m pip" rather than "/usr/bin/pip3" in postinst (#10).
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Thu, 01 Apr 2021 17:46:43 +0200
+
 linuxmuster-prepare (0.7.6-0ubuntu0) lmn7; urgency=low
 
   * fix #10: python3-reconfigure not available in 20.04.
