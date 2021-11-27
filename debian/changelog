@@ -1,3 +1,10 @@
+linuxmuster-prepare (7.1.0-0) lmn71; urgency=low
+
+  * lmn71 changes.
+  * implemented github workflow.
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Sat, 27 Nov 2021 18:12:00 +0100
+
 linuxmuster-prepare (0.7.6-1ubuntu0) lmn7; urgency=low
 
   * invoke "/usr/bin/python3 -m pip" rather than "/usr/bin/pip3" in postinst (#10).
