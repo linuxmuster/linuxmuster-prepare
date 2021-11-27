@@ -1,12 +1,12 @@
 # linuxmuster-prepare
 
-Scripts and configuration templates to initially setup a virtual appliance for linuxmuster.
+Scripts and configuration templates to initially setup a virtual appliance for linuxmuster 7.1.
 
-Skripte und Konfigurationsvorlagen für die Vorbereitung einer virtuellen Appliance für linuxmuster.net auf Basis von Ubuntu Server 18.04.
+Skripte und Konfigurationsvorlagen für die Vorbereitung einer virtuellen Appliance für linuxmuster.net 7.1 auf Basis von Ubuntu Server 18.04.
 
 ## Das Skript
 
-[lmn7-appliance](https://archive.linuxmuster.net/lmn7/lmn7-appliance) bereitet die Appliance für das Rollout vor:
+[lmn7-appliance](https://raw.githubusercontent.com/linuxmuster/linuxmuster-prepare/master/lmn7-appliance) bereitet die Appliance für das Rollout vor:
 - Es bringt das Betriebssystem auf den aktuellen Stand,
 - installiert das Paket **linuxmuster-prepare** und
 - startet dann das Vorbereitungsskript _linuxmuster-prepare_,
@@ -20,7 +20,7 @@ Parameter | Wert | Bedeutung
 ----------|------|----------  
 `-t, --hostname=` | `<hostname>` | Hostname der Appliance, falls weggelassen wird der Profilname verwendet.  
 `-n, --ipnet=` | `<ip/bitmask>` | IP-Adresse und Bitmaske des Hosts (Standardwert ist 10.0.0.[1,2,3]/16, abhängig vom Profil).  
-`-p, --profile=` | `<server,opsi,docker,ubuntu>` | Appliance-Profil, wurde -n nicht angegeben, wird die IP-Adresse automatisch gesetzt: server 10.0.0.1, opsi 10.0.0.2, docker 10.0.0.3. Bei "ubuntu" muss mit -n eine Adresse/Bitmaske angegeben werden.  
+`-p, --profile=` | `<server,docker,ubuntu>` | Appliance-Profil, wurde -n nicht angegeben, wird die IP-Adresse automatisch gesetzt: server 10.0.0.1, opsi 10.0.0.2, docker 10.0.0.3. Bei "ubuntu" muss mit -n eine Adresse/Bitmaske angegeben werden.  
 `-l, --pvdevice=` | `<device>` | Pfad zum LVM-Device (nur bei Serverprofil).  
 `-f, --firewall=` | `<ip>` | Firewall-/Gateway-/Nameserver-Adresse (Standard x.x.x.254).  
 `-d, --domain=` | `<domain>` | Domänenname (Standard: linuxmuster.lan).  
@@ -39,7 +39,6 @@ linbo | /dev/vg_srv/linbo | /srv/linbo | 40G
 global | /dev/vg_srv/global | /srv/samba/global | 10G  
 default-school | /dev/vg_srv/default-school | /srv/samba/default-school | 40G  
 
-- opsi: Das Paket _linuxmuster-opsi_ mit allen seinen Abhängigkeiten wird installiert.
 - docker: Die Pakete _docker_ und _docker-compose_ werden mit allen ihren Abhängigkeiten installiert.
 - ubuntu: Es werden keine zusätzliche Pakete installiert, Hostname mit Parameter `-t, --hostname=<hostname>` und IP/Netzmaske mit `-n, --ipnet=<ip/bitmask>` müssen zwingend angegeben werden.
 
@@ -48,12 +47,6 @@ default-school | /dev/vg_srv/default-school | /srv/samba/default-school | 40G
   - Richtet Serverprofil mit LVM auf 2. Festplatte mit Standardwerten ein:
   - Hostname _server_,
   - IP/Bitmask _10.0.0.1/16_,
-  - Domänenname _linuxmuster.lan_
-  - Gateway/DNS _10.0.0.254_
-- `lmn7-appliance -p opsi -u`
-  - Richtet Opsiprofil mit Defaultwerten ein:
-  - Hostname: _opsi_
-  - IP/Bitmask: _10.0.0.2/16_
   - Domänenname _linuxmuster.lan_
   - Gateway/DNS _10.0.0.254_
 - `lmn7-appliance -p docker -n 10.16.1.3/12 -d meineschule.de -u`
@@ -77,10 +70,10 @@ default-school | /dev/vg_srv/default-school | /srv/samba/default-school | 40G
   - System in eine Partition auf HD 1 installieren (keine Swappartition),
   - HD 2 unkonfiguriert lassen.
 - Nach dem ersten Boot als root einloggen und Prepare-Skript herunterladen:  
-`# wget https://archive.linuxmuster.net/lmn7/lmn7-appliance`
+`# wget https://raw.githubusercontent.com/linuxmuster/linuxmuster-prepare/master/lmn7-appliance`
 - Skript ausführbar machen und starten:  
 `./lmn7-appliance.py -p server -u -l /dev/sdb`  
 - Appliance herunterfahren und Snapshot erstellen.  
 
 ## Weitere Appliances vorbereiten
-Opsi-, Docker- und weitere Appliances werden mit jeweils nur einer Festplatte erstellt. Die Vorgehensweise ist ansonsten analog zu derjenigen des Servers. Beispiele für Skriptaufrufe siehe oben.
+Docker und weitere Appliances werden mit jeweils nur einer Festplatte erstellt. Die Vorgehensweise ist ansonsten analog zu derjenigen des Servers. Beispiele für Skriptaufrufe siehe oben.
