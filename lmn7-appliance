@@ -2,11 +2,12 @@
 #
 # lmn7-appliance
 # thomas@linuxmuster.net
-# 20190903
+# 20211127
 #
 
 import getopt
 import os
+import subprocess
 import sys
 import urllib.request
 
@@ -15,15 +16,19 @@ if not os.geteuid() == 0:
     sys.exit('Please start the script as root user.\n You can use the command "sudo -i" to achieve this.')
 
 # help
+
+
 def usage(rc):
     print('Downloads and installs linuxmuster-prepare package and initially prepares')
     print('a linuxmuster.net ubuntu appliance.\n')
     print('Usage: lmn7-appliance [options]')
     print('\n[options] are:\n')
-    print('-t, --hostname=<hostname>   : Hostname to apply (optional, works only with')
+    print(
+        '-t, --hostname=<hostname>   : Hostname to apply (optional, works only with')
     print('                              server profile).')
     print('-n, --ipnet=<ip/bitmask>    : Ip address and bitmask assigned to the host')
-    print('                              (optional, default is 10.0.0.x/16, depending')
+    print(
+        '                              (optional, default is 10.0.0.x/16, depending')
     print('                              on the profile).')
     print('-p, --profile=<profile>     : Host profile to apply, mandatory. Expected')
     print('                              values are "server", "opsi", "docker" or "ubuntu".')
@@ -36,12 +41,14 @@ def usage(rc):
     print('-h, --help                  : Print this help.')
     sys.exit(rc)
 
+
 # get cli args
 try:
-    opts, args = getopt.getopt(sys.argv[1:], "d:f:hl:n:p:t:u", ["domain=", "firewall=", "help", "pvdevice=", "ipnet=", "profile=", "hostname=", "unattended"])
+    opts, args = getopt.getopt(sys.argv[1:], "d:f:hl:n:p:t:u", [
+                               "domain=", "firewall=", "help", "pvdevice=", "ipnet=", "profile=", "hostname=", "unattended"])
 except getopt.GetoptError as err:
     # print help information and exit:
-    print(err) # will print something like "option -a not recognized"
+    print(err)  # will print something like "option -a not recognized"
     usage(2)
 
 # default values
@@ -52,7 +59,7 @@ domainname = ''
 firewallip = ''
 ipnet = ''
 pvdevice = ''
-profile_list = ['server', 'opsi', 'docker', 'ubuntu']
+profile_list = ['server', 'docker', 'ubuntu']
 
 # evaluate options
 for o, a in opts:
@@ -82,21 +89,23 @@ if not profile in profile_list or profile == '':
 profile = ' -p ' + profile
 
 # repo data
-url = 'https://archive.linuxmuster.net/'
-repokey = 'archive.linuxmuster.net.key'
+url = 'https://deb.linuxmuster.net/'
+repokey = 'pub.gpg'
 repokey_remote = url + repokey
 repokey_local = '/tmp/' + repokey
-lmn7list_remote = url + 'lmn7/lmn7.list'
-lmn7list_local = '/etc/apt/sources.list.d/lmn7.list'
+lmn71_list = '/etc/apt/sources.list.d/lmn71.list'
+lmn71_deb = 'deb https://deb.linuxmuster.net/ lmn71 main'
 pkgname = 'linuxmuster-prepare'
 rmpkgs = 'lxd lxd-client lxcfs lxc-common snapd'
 
 # return content of text file
+
+
 def readTextfile(tfile):
     if not os.path.isfile(tfile):
         return False, None
     try:
-        infile = open(tfile , 'r')
+        infile = open(tfile, 'r')
         content = infile.read()
         infile.close()
         return True, content
@@ -104,25 +113,43 @@ def readTextfile(tfile):
         print('Cannot read ' + tfile + '!')
         return False, None
 
-print('### lmn7-prepare')
+# write textfile
+
+
+def writeTextfile(tfile, content, flag):
+    try:
+        outfile = open(tfile, flag)
+        outfile.write(content)
+        outfile.close()
+        return True
+    except:
+        print('Failed to write ' + tfile + '!')
+        return False
+
+
+print('### lmn71-prepare')
 
 # install lmn7 repo
-print('## install lmn7 repo')
+print('## install lmn71 repo')
 urllib.request.urlretrieve(repokey_remote, repokey_local)
-urllib.request.urlretrieve(lmn7list_remote, lmn7list_local)
-os.system('apt-key add ' + repokey_local)
+writeTextfile(lmn71_list, lmn71_deb, 'w')
+subprocess.call('apt-key add ' + repokey_local, shell=True)
 
 # get updates
 print('## install software updates')
-os.system('apt clean')
-os.system('apt update')
-os.system('DEBIAN_FRONTEND=noninteractive apt -y purge ' + rmpkgs)
-os.system('DEBIAN_FRONTEND=noninteractive apt -y dist-upgrade')
+subprocess.call('apt clean', shell=True)
+subprocess.call('apt update', shell=True)
+subprocess.call(
+    'DEBIAN_FRONTEND=noninteractive apt -y purge ' + rmpkgs, shell=True)
+subprocess.call(
+    'DEBIAN_FRONTEND=noninteractive apt -y dist-upgrade', shell=True)
 
 # get lmn7 packages
 print('## install linuxmuster-prepare package')
-os.system('DEBIAN_FRONTEND=noninteractive echo -e "y\ny\ny\n" | apt -y install ' + pkgname)
+subprocess.call(
+    'DEBIAN_FRONTEND=noninteractive echo -e "y\ny\ny\n" | apt -y install ' + pkgname, shell=True)
 
 # invoke script
 print('## invoke linuxmuster-prepare')
-os.system('linuxmuster-prepare -i' + unattended + profile + hostname + domainname + firewallip + ipnet + pvdevice)
+subprocess.call('linuxmuster-prepare -i' + unattended + profile
+                + hostname + domainname + firewallip + ipnet + pvdevice, shell=True)
