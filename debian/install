@@ -1,4 +1,2 @@
 sbin/*		                        usr/sbin/
 share/*		                        usr/share/linuxmuster/prepare/
-share/lmn7.list                   etc/apt/sources.list.d/
-share/archive.linuxmuster.net.gpg etc/apt/trusted.gpg.d/
