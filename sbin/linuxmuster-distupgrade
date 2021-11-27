@@ -2,7 +2,7 @@
 #
 # linuxmuster-distupgrade
 # thomas@linuxmuster.net
-# 20180504
+# 20211127
 #
 
-apt update && apt-get -y dist-upgrade && apt clean && apt-get -y autoremove
+apt-get update && apt-get -y dist-upgrade && apt-get -y autoremove
