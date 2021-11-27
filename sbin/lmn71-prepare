@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 #
-# linuxmuster-prepare
+# lmn71-prepare
 # thomas@linuxmuster.net
-# 20210330
+# 20211127
 #
 
 import configparser
@@ -15,6 +15,7 @@ import pathlib
 import re
 import reconfigure
 import socket
+import subprocess
 import sys
 
 from IPy import IP
@@ -44,12 +45,13 @@ pkgs = ''
 ipnr = ''
 rootpw_default = 'Muster!'
 rootpw = 'Muster!'
-profile_list = ['server', 'opsi', 'docker', 'ubuntu']
-user_list = ['linuxmuster', 'opsiadmin']
+profile_list = ['server', 'docker', 'ubuntu']
+user_list = ['linuxmuster']
 profile = ''
 pvdevice = ''
 vgname = 'vg_srv'
-lvmvols = [('var', '10G', '/var'), ('linbo', '40G', '/srv/linbo'), ('global', '10G', '/srv/samba/global'), ('default-school', '100%FREE', '/srv/samba/schools/default-school')]
+lvmvols = [('var', '10G', '/var'), ('linbo', '40G', '/srv/linbo'), ('global', '10G',
+                                                                    '/srv/samba/global'), ('default-school', '100%FREE', '/srv/samba/schools/default-school')]
 quotamntopts = 'user_xattr,acl,usrjquota=aquota.user,grpjquota=aquota.group,jqfmt=vfsv0,barrier=1'
 unattended = False
 # ipset = False
@@ -71,9 +73,7 @@ prepini = libdir + '/prepare.ini'
 setupini = libdir + '/setup.ini'
 dockerdir = '/srv/docker'
 srvpkgs = 'lvm2'
-xenialpkgs = 'resolvconf ifupdown'
 bionicpkgs = 'netplan.io net-tools'
-issuepkgs = [['xenial', xenialpkgs], ['bionic', bionicpkgs]]
 swapfile = '/swap.img'
 
 
@@ -81,22 +81,25 @@ swapfile = '/swap.img'
 
 # help
 def usage(rc):
-    print('Usage: linuxmuster-prepare [options]')
+    print('Usage: lmn71-prepare [options]')
     print('\n [options] are:\n')
     print('-x, --force                 : Force run on an already configured system.')
     print('-i, --initial               : Prepare the appliance initially for rollout.')
     print('-s, --setup                 : Further appliance setup (network, swapsize).')
     print('                              Note: You have to use either -i or -s.')
-    print('-t, --hostname=<hostname>   : Hostname to apply (optional, works only with')
+    print(
+        '-t, --hostname=<hostname>   : Hostname to apply (optional, works only with')
     print('                              server profile).')
     print('-n, --ipnet=<ip/bitmask>    : Ip address and bitmask assigned to the host')
-    print('                              (optional, default is 10.0.0.x/16, depending')
+    print(
+        '                              (optional, default is 10.0.0.x/16, depending')
     print('                              on the profile).')
     print('-p, --profile=<profile>     : Host profile to apply, mandatory. Expected')
-    print('                              values are "server", "opsi", "docker" or "ubuntu".')
+    print('                              values are "server", "docker" or "ubuntu".')
     print('                              Profile name is also used as hostname, except for')
     print('                              "server" if set with -t.')
-    print('-c, --createcert            : Create self signed server cert (to be used only')
+    print(
+        '-c, --createcert            : Create self signed server cert (to be used only')
     print('                              in setup mode and with docker profile).')
     print('-l, --pvdevice=<device>     : Initially sets up lmv on the given device')
     print('                              (server profile only).')
@@ -121,6 +124,8 @@ def usage(rc):
     sys.exit(rc)
 
 # test internet connection by archive.linuxmuster.net
+
+
 def internet(host="archive.linuxmuster.net", port=443, timeout=3):
     """
     Host: archive.linuxmuster.net
@@ -136,19 +141,25 @@ def internet(host="archive.linuxmuster.net", port=443, timeout=3):
         return False
 
 # print without linefeed
+
+
 def printr(msg):
     print(msg, end='', flush=True)
 
 # return datetime string
+
+
 def dtStr():
     return "{:%Y%m%d%H%M%S}".format(datetime.datetime.now())
 
 # return content of text file
+
+
 def readTextfile(tfile):
     if not os.path.isfile(tfile):
         return False, None
     try:
-        infile = open(tfile , 'r')
+        infile = open(tfile, 'r')
         content = infile.read()
         infile.close()
         return True, content
@@ -157,6 +168,8 @@ def readTextfile(tfile):
         return False, None
 
 # write textfile
+
+
 def writeTextfile(tfile, content, flag):
     try:
         outfile = open(tfile, flag)
@@ -168,6 +181,8 @@ def writeTextfile(tfile, content, flag):
         return False
 
 # replace string in file
+
+
 def replaceInFile(tfile, search, replace):
     rc = False
     try:
@@ -184,6 +199,8 @@ def replaceInFile(tfile, search, replace):
     return rc
 
 # return detected network interfaces
+
+
 def detectedInterfaces():
     iface_list = netifaces.interfaces()
     iface_list.remove('lo')
@@ -195,6 +212,8 @@ def detectedInterfaces():
     return iface_list, iface_default
 
 # return default network interface
+
+
 def getDefaultIface():
     # first try to get a single interface
     iface_list, iface_default = detectedInterfaces()
@@ -214,6 +233,8 @@ def getDefaultIface():
     return iface_list, iface_default
 
 # test valid hostname
+
+
 def isValidHostname(hostname):
     try:
         if (len(hostname) > 63 or hostname[0] == '-' or hostname[-1] == '-'):
@@ -227,6 +248,8 @@ def isValidHostname(hostname):
         return False
 
 # test valid domainname
+
+
 def isValidDomainname(domainname):
     try:
         for label in domainname.split('.'):
@@ -237,6 +260,8 @@ def isValidDomainname(domainname):
         return False
 
 # test valid ipv4 address
+
+
 def isValidHostIpv4(ip):
     try:
         ipv4 = IP(ip)
@@ -253,6 +278,8 @@ def isValidHostIpv4(ip):
         return False
 
 # get issue name
+
+
 def getIssue():
     rc, content = readTextfile('/etc/issue')
     issue = content.split(' ')[1]
@@ -261,20 +288,17 @@ def getIssue():
     else:
         return 'xenial'
 
-# get issue specific packages
-def getIssuePkgs():
-    issue = getIssue()
-    for item in issuepkgs:
-        if item[0] == issue:
-            return item[1]
 
-# profile setup (server, opsi, docker)
+# profile setup (server & docker)
+
+
 def do_profile(profile):
     print('## Profile')
     defaultprof = profile
     if not unattended:
         while True:
-            profile = input('Enter host profile ' + str(profile_list).replace("'", "") + ' [' + defaultprof + ']: ')
+            profile = input(
+                'Enter host profile ' + str(profile_list).replace("'", "") + ' [' + defaultprof + ']: ')
             profile = profile or defaultprof
             if (profile in profile_list) or profile == '':
                 break
@@ -283,19 +307,18 @@ def do_profile(profile):
     if profile == 'server':
         ipnr = '1'
         pkgs = 'linuxmuster-base7 ' + srvpkgs
-    elif profile == 'opsi':
-        ipnr = '2'
-        pkgs = 'linuxmuster-opsi'
     elif profile == 'docker':
         ipnr = '3'
         pkgs = 'docker docker-compose linuxmuster-nginx-proxy'
     elif profile == 'ubuntu':
         ipnr = '21'
         pkgs = ''
-    pkgs = pkgs + ' ' + getIssuePkgs()
+    pkgs = pkgs + ' ' + bionicpkgs
     return ipnr, pkgs
 
 # network setup
+
+
 def do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broadcast, firewallip, gateway, hostname, domainname, unattended, setup_mode):
     # interface
     print('## Network')
@@ -305,7 +328,8 @@ def do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broa
         iface = iface_default
     if (unattended and iface == '') or not unattended:
         while True:
-            iface = input('Enter network interface to use ' + str(iface_list) + ': ')
+            iface = input('Enter network interface to use '
+                          + str(iface_list) + ': ')
             iface = iface or iface_default
             if iface in iface_list:
                 break
@@ -327,7 +351,8 @@ def do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broa
         defaultip = ipnet
     if (unattended and ipnet == '') or not unattended:
         while True:
-            ipnet = input('Enter ip address with net or bitmask [' + defaultip + ']: ')
+            ipnet = input(
+                'Enter ip address with net or bitmask [' + defaultip + ']: ')
             ipnet = ipnet or defaultip
             try:
                 n = IP(ipnet, make_net=True)
@@ -356,7 +381,8 @@ def do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broa
     else:
         while True:
             defaultip = firewallip
-            firewallip = input('Enter firewall ip address [' + firewallip + ']: ')
+            firewallip = input(
+                'Enter firewall ip address [' + firewallip + ']: ')
             firewallip = firewallip or defaultip
             if isValidHostIpv4(firewallip):
                 break
@@ -410,18 +436,23 @@ def do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broa
     return iface, hostname, domainname, hostip, bitmask, netmask, network, broadcast, firewallip, gateway
 
 # lvm
+
+
 def do_lvm(pvdevice, vgname, lvmvols, quotamntopts):
     print('## LVM')
     # if volume group exists do nothing
     vgdisplay = os.popen('vgdisplay').read()
     if ' ' + vgname + '\n' in vgdisplay:
-        pvdevice = os.popen("pvdisplay | grep 'PV Name' | awk '{ print $3 }'").read().replace('\n', '')
-        print('# Volume group ' + vgname + ' with device ' + pvdevice + ' exists already!')
+        pvdevice = os.popen(
+            "pvdisplay | grep 'PV Name' | awk '{ print $3 }'").read().replace('\n', '')
+        print('# Volume group ' + vgname + ' with device '
+              + pvdevice + ' exists already!')
         return pvdevice
     # ask for pvdevice
     if not unattended:
         while True:
-            pvdevice = input('Enter physical device to use for LVM [' + pvdevice + ']: ')
+            pvdevice = input(
+                'Enter physical device to use for LVM [' + pvdevice + ']: ')
             if pvdevice == '':
                 break
             elif pathlib.Path(pvdevice).is_block_device():
@@ -435,10 +466,10 @@ def do_lvm(pvdevice, vgname, lvmvols, quotamntopts):
     rc, fstab = readTextfile('/etc/fstab')
     fstab = fstab + '\n'
     print('# Creating physical volume ' + pvdevice + '.')
-    if os.system('pvcreate ' + pvdevice) != 0:
+    if subprocess.call('pvcreate ' + pvdevice, shell=True) != 0:
         sys.exit(1)
     print('# Creating volume group ' + vgname + '.')
-    if os.system('vgcreate ' + vgname + ' ' + pvdevice) != 0:
+    if subprocess.call('vgcreate ' + vgname + ' ' + pvdevice, shell=True) != 0:
         sys.exit(1)
     for item in lvmvols:
         volname = item[0]
@@ -448,14 +479,14 @@ def do_lvm(pvdevice, vgname, lvmvols, quotamntopts):
         else:
             volsize = ' -L ' + volsize
         volmnt = item[2]
-        os.system('mkdir -p ' + volmnt)
+        subprocess.call('mkdir -p ' + volmnt, shell=True)
         volpath = '/dev/' + vgname + '/' + volname
         print('# Creating logical volume ' + volname + '.')
         lvcreate = 'lvcreate' + volsize + ' -n ' + volname + ' ' + vgname
         #print('# ' + lvcreate)
-        if os.system(lvcreate) != 0:
+        if subprocess.call(lvcreate, shell=True) != 0:
             sys.exit(1)
-        if os.system('mkfs.ext4 -L ' + volname + ' ' + volpath) != 0:
+        if subprocess.call('mkfs.ext4 -L ' + volname + ' ' + volpath, shell=True) != 0:
             sys.exit(1)
         # set quota mount options
         if volname == 'global' or volname == 'default-school':
@@ -467,15 +498,17 @@ def do_lvm(pvdevice, vgname, lvmvols, quotamntopts):
     if not writeTextfile('/etc/fstab', fstab, 'w'):
         sys.exit(1)
     print('# Moving /var.')
-    if os.system('mount /dev/' + vgname + '/var /mnt') != 0:
+    if subprocess.call('mount /dev/' + vgname + '/var /mnt', shell=True) != 0:
         sys.exit(1)
-    if os.system('rsync -a /var/ /mnt/') != 0:
+    if subprocess.call('rsync -a /var/ /mnt/', shell=True) != 0:
         sys.exit(1)
-    if os.system('umount /mnt && rm -rf /var/* && mount -a') != 0:
+    if subprocess.call('umount /mnt && rm -rf /var/* && mount -a', shell=True) != 0:
         sys.exit(1)
     return pvdevice
 
 # set quota mount options to fstab if no lvm is defined
+
+
 def do_fstab_root(quotamntopts):
     mntopts = quotamntopts + ',errors=remount-ro'
     config = FSTabConfig(path='/etc/fstab')
@@ -489,53 +522,62 @@ def do_fstab_root(quotamntopts):
             print('# Modifying mount options for "' + mp + '".')
             config.tree.filesystems[count].options = mntopts
             config.save()
-            os.system('mount -o remount /')
+            subprocess.call('mount -o remount /', shell=True)
             break
         count += 1
 
 # activate quota on server partitions
+
+
 def do_quota():
     print('# Activating quota.')
-    os.system('quotaoff -a')
-    os.system('quotacheck -cvugam')
-    os.system('quotaon -a')
+    subprocess.call('quotaoff -a', shell=True)
+    subprocess.call('quotacheck -cvugam', shell=True)
+    subprocess.call('quotaon -a', shell=True)
 
 # swap file
+
+
 def do_swap(swapsize):
     print('## Swapfile')
     gbsize = swapsize + 'G'
     if not os.path.isfile(swapfile):
         print('No swapfile found, skipping this step!')
         return
-    os.system('swapoff ' + swapfile)
-    os.system('rm ' + swapfile)
+    subprocess.call('swapoff ' + swapfile, shell=True)
+    subprocess.call('rm ' + swapfile, shell=True)
     if unattended == True:
         try:
-            os.system('fallocate -l ' + gbsize + ' ' + swapfile)
+            subprocess.call('fallocate -l ' + gbsize
+                            + ' ' + swapfile, shell=True)
         except:
             print('Cannot create ' + swapfile + '!')
             sys.exit(1)
     else:
         while True:
             defaultsize = swapsize
-            swapsize = input('Enter the size of the swapfile in GB [' + defaultsize + ']: ')
+            swapsize = input(
+                'Enter the size of the swapfile in GB [' + defaultsize + ']: ')
             swapsize = swapsize or defaultsize
             gbsize = swapsize + 'G'
-            rc = os.system('fallocate -l ' + gbsize + ' ' + swapfile)
+            rc = subprocess.call('fallocate -l ' + gbsize
+                                 + ' ' + swapfile, shell=True)
             if rc == 0:
                 break
             else:
                 print("Invalid entry!")
-    os.system('chmod 600 ' + swapfile)
-    os.system('mkswap ' + swapfile)
-    os.system('swapon ' + swapfile)
-    os.system('swapon --show')
+    subprocess.call('chmod 600 ' + swapfile, shell=True)
+    subprocess.call('mkswap ' + swapfile, shell=True)
+    subprocess.call('swapon ' + swapfile, shell=True)
+    subprocess.call('swapon --show', shell=True)
 
 # root password
+
+
 def do_password(rootpw):
     print('## Passwords')
     printr('# root ... ')
-    rc = os.system('echo "root:' + rootpw + '" | chpasswd')
+    rc = subprocess.call('echo "root:' + rootpw + '" | chpasswd', shell=True)
     if rc == 0:
         print('OK!')
     else:
@@ -543,31 +585,35 @@ def do_password(rootpw):
     for item in user_list:
         if os.path.isdir('/home/' + item):
             printr('# ' + item + ' ... ')
-            if item == 'opsiadmin':
-                rc = os.system('linuxmuster-opsi --password="' + rootpw + '"')
             else:
-                rc = os.system('echo "' + item + ':' + rootpw + '" | chpasswd')
+                rc = subprocess.call(
+                    'echo "' + item + ':' + rootpw + '" | chpasswd', shell=True)
         if rc == 0:
             print('OK!')
         else:
             print('Failed!')
 
 # create ssh hostkeys
+
+
 def do_keys():
     print('## SSH host keys')
     hostkey_prefix = '/etc/ssh/ssh_host_'
     crypto_list = ['dsa', 'ecdsa', 'ed25519', 'rsa']
-    os.system('rm -f /etc/ssh/*key*')
+    subprocess.call('rm -f /etc/ssh/*key*', shell=True)
     for a in crypto_list:
         printr(' * ' + a + ' host key:')
         try:
-            os.system('ssh-keygen -t ' + a + ' -f ' + hostkey_prefix + a + '_key -N ""')
+            subprocess.call('ssh-keygen -t ' + a + ' -f '
+                            + hostkey_prefix + a + '_key -N ""', shell=True)
             print(' Success!')
         except:
             print(' Failed!')
             sys.exit(1)
 
 # create ssl certs (docker only)
+
+
 def do_sslcert(profile, domainname):
     print('## SSL certificate')
     ssldir = '/etc/linuxmuster/ssl'
@@ -575,26 +621,34 @@ def do_sslcert(profile, domainname):
     keyfile = ssldir + '/' + profile + '.key.pem'
     certfile = ssldir + '/' + profile + '.cert.pem'
     days = '3653'
-    os.system('mkdir -p ' + ssldir)
-    os.system('openssl genrsa -out ' + keyfile + ' 2048')
-    os.system('chmod 640 ' + keyfile)
-    os.system('echo -e "\n\n\n' + domainname + '\n' + profile + '\n' + profile + '\n\n\n\n" | openssl req -new -key ' + keyfile + ' -out ' + csrfile)
-    os.system('openssl x509 -req -days ' + days + ' -in ' + csrfile + ' -signkey ' + keyfile + ' -out ' + certfile)
+    subprocess.call('mkdir -p ' + ssldir, shell=True)
+    subprocess.call('openssl genrsa -out ' + keyfile + ' 2048', shell=True)
+    subprocess.call('chmod 640 ' + keyfile, shell=True)
+    subprocess.call('echo -e "\n\n\n' + domainname + '\n' + profile + '\n' + profile
+                    + '\n\n\n\n" | openssl req -new -key ' + keyfile + ' -out ' + csrfile, shell=True)
+    subprocess.call('openssl x509 -req -days ' + days + ' -in '
+                    + csrfile + ' -signkey ' + keyfile + ' -out ' + certfile, shell=True)
 
 # host specific software if internet connection is available
+
+
 def do_updates(pkgs):
     if not internet():
         print('# No internet connection!')
         sys.exit(1)
     print('## Installing updates and host specific software')
-    os.system('apt update')
-    os.system('DEBIAN_FRONTEND=noninteractive apt -y dist-upgrade')
-    os.system('DEBIAN_FRONTEND=noninteractive apt -y --allow-unauthenticated install ' + pkgs)
-    os.system('apt clean && apt -y autoremove')
+    subprocess.call('apt-get update', shell=True)
+    subprocess.call(
+        'DEBIAN_FRONTEND=noninteractive apt-get -y dist-upgrade', shell=True)
+    subprocess.call(
+        'DEBIAN_FRONTEND=noninteractive apt-get -y --allow-unauthenticated install ' + pkgs, shell=True)
+    subprocess.call('apt-get clean && apt-get -y autoremove', shell=True)
     updates = True
     return updates
 
 # merge inifiles
+
+
 def mergeInis():
     print('## Merging inifiles:')
     setup = configparser.ConfigParser(inline_comment_prefixes=('#', ';'))
@@ -618,6 +672,8 @@ def mergeInis():
     os.unlink(prepini)
 
 # print setup values
+
+
 def print_values(profile, hostname, domainname, hostip, netmask, firewallip, iface, swapsize, pvdevice):
     print('\n## The system has been prepared with the following values:')
     print('# Profile   : ' + profile)
@@ -635,15 +691,16 @@ def print_values(profile, hostname, domainname, hostip, netmask, firewallip, ifa
 ## functions end
 
 
-os.system('clear')
-print('### linuxmuster-prepare')
+subprocess.call('clear')
+print('### lmn71-prepare')
 
 # get cli args
 try:
-    opts, args = getopt.getopt(sys.argv[1:], "a:bcd:ef:g:hijkl:n:op:r:st:uw:x", ["rootpw=", "reboot", "createcert", "domain=", "default", "firewall=", "gateway=", "help", "initial", "no-keys", "no-pw", "pvdevice=", "ipnet=", "profile=", "do-it-like-babo", "serverip=", "setup", "hostname=", "unattended", "swapsize=", "force"])
+    opts, args = getopt.getopt(sys.argv[1:], "a:bcd:ef:g:hijkl:n:op:r:st:uw:x", ["rootpw=", "reboot", "createcert", "domain=", "default", "firewall=", "gateway=", "help",
+                                                                                 "initial", "no-keys", "no-pw", "pvdevice=", "ipnet=", "profile=", "do-it-like-babo", "serverip=", "setup", "hostname=", "unattended", "swapsize=", "force"])
 except getopt.GetoptError as err:
     # print help information and exit:
-    print(err) # will print something like "option -a not recognized"
+    print(err)  # will print something like "option -a not recognized"
     usage(2)
 
 # read saved profile from previous run
@@ -847,7 +904,8 @@ if initial:
     serverip = ''
     rootpw = rootpw_default
     ipnr, pkgs = do_profile(profile)
-    iface, hostname, domainname, hostip, bitmask, netmask, network, broadcast, firewallip, gateway = do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broadcast, firewallip, gateway, hostname, domainname, unattended, setup_mode)
+    iface, hostname, domainname, hostip, bitmask, netmask, network, broadcast, firewallip, gateway = do_network(
+        iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broadcast, firewallip, gateway, hostname, domainname, unattended, setup_mode)
     if profile == 'server':
         pvdevice = do_lvm(pvdevice, vgname, lvmvols, quotamntopts)
         if pvdevice == '':
@@ -855,16 +913,14 @@ if initial:
         do_quota()
     updates = do_updates(pkgs)
     # activate serial console
-    os.system('systemctl enable serial-getty@ttyS0.service')
-    os.system('systemctl start serial-getty@ttyS0.service')
-    # install necessary opsi pkgs
-    if profile == 'opsi':
-        os.system('linuxmuster-opsi --install')
+    subprocess.call('systemctl enable serial-getty@ttyS0.service', shell=True)
+    subprocess.call('systemctl start serial-getty@ttyS0.service', shell=True)
     do_password(rootpw)
     dnssearch = ''
 elif setup:
     ipnr, pkgs = do_profile(profile)
-    iface, hostname, domainname, hostip, bitmask, netmask, network, broadcast, firewallip, gateway = do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broadcast, firewallip, gateway, hostname, domainname, unattended, setup_mode)
+    iface, hostname, domainname, hostip, bitmask, netmask, network, broadcast, firewallip, gateway = do_network(
+        iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broadcast, firewallip, gateway, hostname, domainname, unattended, setup_mode)
     do_swap(swapsize)
     # write hostname before keys and certificates were created
     writeTextfile('/etc/hostname', hostname + '.' + domainname, 'w')
@@ -878,10 +934,10 @@ elif setup:
 
 # write configs, common and issue specific
 print('## Writing configuration')
-os.system('mkdir -p ' + libdir)
+subprocess.call('mkdir -p ' + libdir, shell=True)
 # delete cloud-init netcfg if present (we provide our own)
-if os.path.isdir('/etc/netplan') and getIssue() == 'bionic':
-    os.system('rm -f /etc/netplan/*.yaml')
+if os.path.isdir('/etc/netplan'):
+    subprocess.call('rm -f /etc/netplan/*.yaml', shell=True)
 # set hostname persistent
 cloudcfg = '/etc/cloud/cloud.cfg'
 replstr = 'preserve_hostname: false'
@@ -890,37 +946,36 @@ if os.path.isfile(cloudcfg):
     if replstr in content:
         content = content.replace(replstr, replstr.replace('false', 'true'))
         rc = writeTextfile(cloudcfg, content, 'w')
-for tdir in [templates + '/common', templates + '/' + getIssue()]:
-    for item in os.listdir(tdir):
-        rc, content = readTextfile(tdir + '/' + item)
-        # extract oufile path from first line
-        firstline = re.findall(r'# .*\n', content)[0]
-        outfile = firstline.partition(' ')[2].replace('\n', '')
-        # replace placeholders
-        content = content.replace('@@iface@@', iface)
-        content = content.replace('@@hostip@@', hostip)
-        content = content.replace('@@hostname@@', hostname)
-        content = content.replace('@@bitmask@@', bitmask)
-        content = content.replace('@@netmask@@', netmask)
-        content = content.replace('@@network@@', network)
-        content = content.replace('@@broadcast@@', broadcast)
-        content = content.replace('@@profile@@', profile)
-        content = content.replace('@@firewallip@@', firewallip)
-        content = content.replace('@@gateway@@', gateway)
-        content = content.replace('@@domainname@@', domainname)
-        content = content.replace('@@dnssearch@@', dnssearch)
-        content = content.replace('@@swapsize@@', swapsize)
-        #content = content.replace('@@resolvconf@@', resolvconf)
-        if outfile == prepini and profile == 'server':
-            content = content.replace('@@serverip@@', hostip)
-        else:
-            content = content.replace('@@serverip@@', serverip)
-        # repair missing serverip in netcfg.yaml
-        content = content.replace('[,', '[')
-        # add date string
-        content = '# modified by linuxmuster-prepare at ' + dtStr() + '\n' + content
-        # write outfile
-        writeTextfile(outfile, content, 'w')
+for item in os.listdir(templates):
+    rc, content = readTextfile(templates + '/' + item)
+    # extract oufile path from first line
+    firstline = re.findall(r'# .*\n', content)[0]
+    outfile = firstline.partition(' ')[2].replace('\n', '')
+    # replace placeholders
+    content = content.replace('@@iface@@', iface)
+    content = content.replace('@@hostip@@', hostip)
+    content = content.replace('@@hostname@@', hostname)
+    content = content.replace('@@bitmask@@', bitmask)
+    content = content.replace('@@netmask@@', netmask)
+    content = content.replace('@@network@@', network)
+    content = content.replace('@@broadcast@@', broadcast)
+    content = content.replace('@@profile@@', profile)
+    content = content.replace('@@firewallip@@', firewallip)
+    content = content.replace('@@gateway@@', gateway)
+    content = content.replace('@@domainname@@', domainname)
+    content = content.replace('@@dnssearch@@', dnssearch)
+    content = content.replace('@@swapsize@@', swapsize)
+    #content = content.replace('@@resolvconf@@', resolvconf)
+    if outfile == prepini and profile == 'server':
+        content = content.replace('@@serverip@@', hostip)
+    else:
+        content = content.replace('@@serverip@@', serverip)
+    # repair missing serverip in netcfg.yaml
+    content = content.replace('[,', '[')
+    # add date string
+    content = '# modified by lmn71-prepare at ' + dtStr() + '\n' + content
+    # write outfile
+    writeTextfile(outfile, content, 'w')
 
 # merge inifiles if setup.ini is present
 if os.path.isfile(setupini):
@@ -929,22 +984,19 @@ if os.path.isfile(setupini):
 # apply netplan configuration
 if getIssue() == 'bionic':
     print('## Configuring netplan')
-    os.system('netplan generate')
-    os.system('netplan apply')
-os.system('hostnamectl set-hostname ' + hostname + '.' + domainname)
+    subprocess.call('netplan generate', shell=True)
+    subprocess.call('netplan apply', shell=True)
+subprocess.call('hostnamectl set-hostname ' + hostname + '.' + domainname)
 
 # finally reconfigure docker containers
 if profile == 'docker' and setup:
     print('## Reconfiguring docker containers')
-    os.system('cd ' + dockerdir + '; for i in linuxmuster-*; do dpkg-reconfigure "$i"; systemctl enable "$i"; done')
-
-# prepare opsi appliance
-if profile == 'opsi' and initial:
-    print('## Preparing opsi system')
-    os.system('linuxmuster-opsi --prepare')
+    subprocess.call('cd ' + dockerdir
+                    + '; for i in linuxmuster-*; do dpkg-reconfigure "$i"; systemctl enable "$i"; done', shell=True)
 
 # print values
-print_values(profile, hostname, domainname, hostip, netmask, firewallip, iface, swapsize, pvdevice)
+print_values(profile, hostname, domainname, hostip,
+             netmask, firewallip, iface, swapsize, pvdevice)
 
 print('\n### Finished - a reboot is necessary!')
 
@@ -953,4 +1005,4 @@ if not updates:
 
 if unattended and reboot:
     print('\n### Reboot requested ...')
-    os.system('/sbin/reboot')
+    subprocess.call('/sbin/reboot', shell=True)
