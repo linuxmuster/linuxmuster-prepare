@@ -47,7 +47,6 @@ build-indep-stamp:
 	touch build-indep-stamp
 
 build: build-arch build-indep
-	sha512sum share/archive.linuxmuster.net.gpg | gpg --clearsign > SHA512SUM.txt.asc
 
 clean: clean1
 clean1:
@@ -70,9 +69,6 @@ install: build
 
 	# Add here commands to install the package.
 	dh_install
-	# remove unnecessary dirs
-	rm -rf `find debian/linuxmuster-mail7 -name .svn`
-	rm -f `find debian/linuxmuster-mail7 -name .directory`
 
 # Build architecture-independent files here.
 # Pass -i to all debhelper commands in this target to reduce clutter.
