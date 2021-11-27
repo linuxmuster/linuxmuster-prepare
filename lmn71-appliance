@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 #
-# lmn7-appliance
+# lmn71-appliance
 # thomas@linuxmuster.net
 # 20211127
 #
@@ -21,7 +21,7 @@ if not os.geteuid() == 0:
 def usage(rc):
     print('Downloads and installs linuxmuster-prepare package and initially prepares')
     print('a linuxmuster.net ubuntu appliance.\n')
-    print('Usage: lmn7-appliance [options]')
+    print('Usage: lmn71-appliance [options]')
     print('\n[options] are:\n')
     print(
         '-t, --hostname=<hostname>   : Hostname to apply (optional, works only with')
@@ -129,7 +129,7 @@ def writeTextfile(tfile, content, flag):
 
 print('### lmn71-prepare')
 
-# install lmn7 repo
+# install lmn71 repo
 print('## install lmn71 repo')
 urllib.request.urlretrieve(repokey_remote, repokey_local)
 writeTextfile(lmn71_list, lmn71_deb, 'w')
@@ -144,12 +144,12 @@ subprocess.call(
 subprocess.call(
     'DEBIAN_FRONTEND=noninteractive apt -y dist-upgrade', shell=True)
 
-# get lmn7 packages
+# get lmn71 packages
 print('## install linuxmuster-prepare package')
 subprocess.call(
     'DEBIAN_FRONTEND=noninteractive echo -e "y\ny\ny\n" | apt -y install ' + pkgname, shell=True)
 
 # invoke script
-print('## invoke linuxmuster-prepare')
-subprocess.call('linuxmuster-prepare -i' + unattended + profile
+print('## invoke lmn71-prepare')
+subprocess.call('lmn71-prepare -i' + unattended + profile
                 + hostname + domainname + firewallip + ipnet + pvdevice, shell=True)
