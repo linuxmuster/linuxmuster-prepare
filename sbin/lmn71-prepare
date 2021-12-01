@@ -2,7 +2,7 @@
 #
 # lmn71-prepare
 # thomas@linuxmuster.net
-# 20211127
+# 2021201
 #
 
 import configparser
@@ -585,9 +585,9 @@ def do_password(rootpw):
     for item in user_list:
         if os.path.isdir('/home/' + item):
             printr('# ' + item + ' ... ')
-            else:
-                rc = subprocess.call(
-                    'echo "' + item + ':' + rootpw + '" | chpasswd', shell=True)
+        else:
+            rc = subprocess.call(
+                'echo "' + item + ':' + rootpw + '" | chpasswd', shell=True)
         if rc == 0:
             print('OK!')
         else:

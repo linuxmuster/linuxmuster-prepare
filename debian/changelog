@@ -1,3 +1,9 @@
+linuxmuster-prepare (7.1.1-0) lmn71; urgency=low
+
+  * fix syntax error in lm71-prepare.
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Wed, 01 Dec 2021 22:52:00 +0100
+
 linuxmuster-prepare (7.1.0-0) lmn71; urgency=low
 
   * lmn71 changes.
