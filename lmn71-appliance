@@ -2,7 +2,7 @@
 #
 # lmn71-appliance
 # thomas@linuxmuster.net
-# 20211127
+# 20211203
 #
 
 import getopt
@@ -89,12 +89,18 @@ if not profile in profile_list or profile == '':
 profile = ' -p ' + profile
 
 # repo data
-url = 'https://deb.linuxmuster.net/'
-repokey = 'pub.gpg'
-repokey_remote = url + repokey
-repokey_local = '/tmp/' + repokey
+lmn71url = 'https://deb.linuxmuster.net/'
+lmn71key = 'pub.gpg'
+lmn71key_remote = lmn71url + lmn71key
+lmn71key_local = '/tmp/' + lmn71key
 lmn71_list = '/etc/apt/sources.list.d/lmn71.list'
 lmn71_deb = 'deb https://deb.linuxmuster.net/ lmn71 main'
+lmn7url = 'https://archive.linuxmuster.net/'
+lmn7key = 'archive.linuxmuster.net.key'
+lmn7key_remote = lmn7url + lmn7key
+lmn7key_local = '/tmp/' + lmn7key
+lmn7_list = '/etc/apt/sources.list.d/lmn7.list'
+lmn7_deb = 'deb https://archive.linuxmuster.net lmn7/'
 pkgname = 'linuxmuster-prepare'
 rmpkgs = 'lxd lxd-client lxcfs lxc-common snapd'
 
@@ -129,11 +135,15 @@ def writeTextfile(tfile, content, flag):
 
 print('### lmn71-prepare')
 
-# install lmn71 repo
+# install repos
+print('## install lmn7 repo')
+urllib.request.urlretrieve(lmn7key_remote, lmn7key_local)
+writeTextfile(lmn7_list, lmn7_deb, 'w')
+subprocess.call('apt-key add ' + lmn7key_local, shell=True)
 print('## install lmn71 repo')
-urllib.request.urlretrieve(repokey_remote, repokey_local)
+urllib.request.urlretrieve(lmn71key_remote, lmn71key_local)
 writeTextfile(lmn71_list, lmn71_deb, 'w')
-subprocess.call('apt-key add ' + repokey_local, shell=True)
+subprocess.call('apt-key add ' + lmn71key_local, shell=True)
 
 # get updates
 print('## install software updates')
