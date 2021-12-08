@@ -2,7 +2,7 @@
 #
 # lmn71-prepare
 # thomas@linuxmuster.net
-# 2021201
+# 2021208
 #
 
 import configparser
@@ -713,27 +713,6 @@ if inifile != '':
     print('## Reading profile from ' + inifile + ':')
     prep = configparser.ConfigParser(inline_comment_prefixes=('#', ';'))
     prep.read(inifile)
-    # try:
-    #     domainname_ini = prep.get('setup', 'domainname')
-    #     if domainname_ini != '':
-    #         domainname = domainname_ini
-    #         print('# domainname: ' + domainname)
-    # except:
-    #     pass
-    # try:
-    #     hostip_ini = prep.get('setup', 'hostip')
-    #     if hostip_ini != '':
-    #         hostip = hostip_ini
-    #         print('# hostip: ' + hostip)
-    # except:
-    #     pass
-    # try:
-    #     hostname_ini = prep.get('setup', 'hostname')
-    #     if hostname_ini != '':
-    #         hostname = hostname_ini
-    #         print('# hostname: ' + hostname)
-    # except:
-    #     pass
     try:
         profile_ini = prep.get('setup', 'profile')
         if profile_ini != '':
@@ -741,36 +720,6 @@ if inifile != '':
             print('# saved profile: ' + profile_ini)
     except:
         pass
-    # try:
-    #     serverip_ini = prep.get('setup', 'serverip')
-    #     if serverip_ini != '':
-    #         serverip = serverip_ini
-    #         print('# serverip: ' + serverip)
-    # except:
-    #     pass
-    # try:
-    #     firewallip_ini = prep.get('setup', 'firewallip')
-    #     if firewallip_ini != '':
-    #         firewallip = firewallip_ini
-    #         print('# firewallip: ' + firewallip)
-    # except:
-    #     pass
-    # try:
-    #     bitmask_ini = prep.get('setup', 'bitmask')
-    #     if bitmask_ini != '':
-    #         bitmask = bitmask_ini
-    #         print('# bitmask: ' + bitmask)
-    # except:
-    #     pass
-    # try:
-    #     swapsize_ini = prep.get('setup', 'swapsize')
-    #     if swapsize_ini != '':
-    #         swapsize = swapsize_ini
-    #         print('# swapsize: ' + swapsize)
-    # except:
-    #     pass
-    # if hostip != '' and bitmask !='':
-    #     ipnet = hostip + '/' + bitmask
 
 # evaluate options
 for o, a in opts:
@@ -981,12 +930,10 @@ for item in os.listdir(templates):
 if os.path.isfile(setupini):
     mergeInis()
 
-# apply netplan configuration
-if getIssue() == 'bionic':
-    print('## Configuring netplan')
-    subprocess.call('netplan generate', shell=True)
-    subprocess.call('netplan apply', shell=True)
-subprocess.call('hostnamectl set-hostname ' + hostname + '.' + domainname)
+# save hostname
+outfile = '/etc/hostname'
+content = hostname + '.' + domainname
+writeTextfile(outfile, content, 'w')
 
 # finally reconfigure docker containers
 if profile == 'docker' and setup:
