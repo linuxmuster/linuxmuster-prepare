@@ -2,7 +2,7 @@
 #
 # lmn71-prepare
 # thomas@linuxmuster.net
-# 2021208
+# 20211222
 #
 
 import configparser
@@ -45,7 +45,7 @@ pkgs = ''
 ipnr = ''
 rootpw_default = 'Muster!'
 rootpw = 'Muster!'
-profile_list = ['server', 'docker', 'ubuntu']
+profile_list = ['server', 'ubuntu']
 user_list = ['linuxmuster']
 profile = ''
 pvdevice = ''
@@ -71,7 +71,6 @@ templates = sharedir + '/templates'
 libdir = '/var/lib/linuxmuster'
 prepini = libdir + '/prepare.ini'
 setupini = libdir + '/setup.ini'
-dockerdir = '/srv/docker'
 srvpkgs = 'lvm2'
 bionicpkgs = 'netplan.io net-tools'
 swapfile = '/swap.img'
@@ -95,12 +94,12 @@ def usage(rc):
         '                              (optional, default is 10.0.0.x/16, depending')
     print('                              on the profile).')
     print('-p, --profile=<profile>     : Host profile to apply, mandatory. Expected')
-    print('                              values are "server", "docker" or "ubuntu".')
+    print('                              values are "server" or "ubuntu".')
     print('                              Profile name is also used as hostname, except for')
     print('                              "server" if set with -t.')
     print(
         '-c, --createcert            : Create self signed server cert (to be used only')
-    print('                              in setup mode and with docker profile).')
+    print('                              in setup mode and with ubuntu profile).')
     print('-l, --pvdevice=<device>     : Initially sets up lmv on the given device')
     print('                              (server profile only).')
     print('-f, --firewall=<ip>         : Firewall ip address (default *.*.*.254).')
@@ -123,9 +122,8 @@ def usage(rc):
     print('-h, --help                  : Print this help.')
     sys.exit(rc)
 
+
 # test internet connection by archive.linuxmuster.net
-
-
 def internet(host="archive.linuxmuster.net", port=443, timeout=3):
     """
     Host: archive.linuxmuster.net
@@ -140,21 +138,18 @@ def internet(host="archive.linuxmuster.net", port=443, timeout=3):
         #print ex.message
         return False
 
+
 # print without linefeed
-
-
 def printr(msg):
     print(msg, end='', flush=True)
 
+
 # return datetime string
-
-
 def dtStr():
     return "{:%Y%m%d%H%M%S}".format(datetime.datetime.now())
 
+
 # return content of text file
-
-
 def readTextfile(tfile):
     if not os.path.isfile(tfile):
         return False, None
@@ -167,9 +162,8 @@ def readTextfile(tfile):
         print('Cannot read ' + tfile + '!')
         return False, None
 
+
 # write textfile
-
-
 def writeTextfile(tfile, content, flag):
     try:
         outfile = open(tfile, flag)
@@ -180,9 +174,8 @@ def writeTextfile(tfile, content, flag):
         print('Failed to write ' + tfile + '!')
         return False
 
+
 # replace string in file
-
-
 def replaceInFile(tfile, search, replace):
     rc = False
     try:
@@ -289,9 +282,7 @@ def getIssue():
         return 'xenial'
 
 
-# profile setup (server & docker)
-
-
+# profile setup
 def do_profile(profile):
     print('## Profile')
     defaultprof = profile
@@ -307,18 +298,14 @@ def do_profile(profile):
     if profile == 'server':
         ipnr = '1'
         pkgs = 'linuxmuster-base7 ' + srvpkgs
-    elif profile == 'docker':
-        ipnr = '3'
-        pkgs = 'docker docker-compose linuxmuster-nginx-proxy'
-    elif profile == 'ubuntu':
+    else:
         ipnr = '21'
         pkgs = ''
     pkgs = pkgs + ' ' + bionicpkgs
     return ipnr, pkgs
 
+
 # network setup
-
-
 def do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broadcast, firewallip, gateway, hostname, domainname, unattended, setup_mode):
     # interface
     print('## Network')
@@ -611,9 +598,8 @@ def do_keys():
             print(' Failed!')
             sys.exit(1)
 
-# create ssl certs (docker only)
 
-
+# create ssl certs (ubuntu only)
 def do_sslcert(profile, domainname):
     print('## SSL certificate')
     ssldir = '/etc/linuxmuster/ssl'
@@ -629,9 +615,8 @@ def do_sslcert(profile, domainname):
     subprocess.call('openssl x509 -req -days ' + days + ' -in '
                     + csrfile + ' -signkey ' + keyfile + ' -out ' + certfile, shell=True)
 
+
 # host specific software if internet connection is available
-
-
 def do_updates(pkgs):
     if not internet():
         print('# No internet connection!')
@@ -646,9 +631,8 @@ def do_updates(pkgs):
     updates = True
     return updates
 
+
 # merge inifiles
-
-
 def mergeInis():
     print('## Merging inifiles:')
     setup = configparser.ConfigParser(inline_comment_prefixes=('#', ';'))
@@ -671,9 +655,8 @@ def mergeInis():
     # remove prepare.ini
     os.unlink(prepini)
 
+
 # print setup values
-
-
 def print_values(profile, hostname, domainname, hostip, netmask, firewallip, iface, swapsize, pvdevice):
     print('\n## The system has been prepared with the following values:')
     print('# Profile   : ' + profile)
@@ -810,8 +793,8 @@ if setup == False and initial == False:
 if setup == True and initial == True:
     print("-i and -s don't work together!")
     usage(1)
-if setup == False and profile != 'docker' and createcert == True:
-    print("-c can only be used together with -s and docker profile!")
+if setup == False and profile != 'ubuntu' and createcert == True:
+    print("-c can only be used together with -s and ubuntu profile!")
     usage(1)
 if setup == False and nokeys == True:
     print("-j can only be used in setup mode!")
@@ -875,7 +858,7 @@ elif setup:
     writeTextfile('/etc/hostname', hostname + '.' + domainname, 'w')
     if not nokeys:
         do_keys()
-    if profile == 'docker' and createcert:
+    if profile == 'ubuntu' and createcert:
         do_sslcert(profile, domainname)
     if not nopw:
         do_password(rootpw)
@@ -934,12 +917,6 @@ if os.path.isfile(setupini):
 outfile = '/etc/hostname'
 content = hostname + '.' + domainname
 writeTextfile(outfile, content, 'w')
-
-# finally reconfigure docker containers
-if profile == 'docker' and setup:
-    print('## Reconfiguring docker containers')
-    subprocess.call('cd ' + dockerdir
-                    + '; for i in linuxmuster-*; do dpkg-reconfigure "$i"; systemctl enable "$i"; done', shell=True)
 
 # print values
 print_values(profile, hostname, domainname, hostip,

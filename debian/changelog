@@ -1,3 +1,9 @@
+linuxmuster-prepare (7.1.3-0) lmn71; urgency=low
+
+  * removed docker code.
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Wed, 22 Dec 2021 15:41:00 +0100
+
 linuxmuster-prepare (7.1.2-0) lmn71; urgency=low
 
   * removed applying netplan configuration since anyway a reboot is necessary.
