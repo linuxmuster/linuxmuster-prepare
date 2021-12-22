@@ -20,7 +20,7 @@ Parameter | Wert | Bedeutung
 ----------|------|----------  
 `-t, --hostname=` | `<hostname>` | Hostname der Appliance, falls weggelassen wird der Profilname verwendet.  
 `-n, --ipnet=` | `<ip/bitmask>` | IP-Adresse und Bitmaske des Hosts (Standardwert ist 10.0.0.[1,2,3]/16, abhängig vom Profil).  
-`-p, --profile=` | `<server,docker,ubuntu>` | Appliance-Profil, wurde -n nicht angegeben, wird die IP-Adresse automatisch gesetzt: server 10.0.0.1, opsi 10.0.0.2, docker 10.0.0.3. Bei "ubuntu" muss mit -n eine Adresse/Bitmaske angegeben werden.  
+`-p, --profile=` | `<server,ubuntu>` | Appliance-Profil, wurde -n nicht angegeben, wird die IP-Adresse automatisch gesetzt: server 10.0.0.1, opsi 10.0.0.2, docker 10.0.0.3. Bei "ubuntu" muss mit -n eine Adresse/Bitmaske angegeben werden.  
 `-l, --pvdevice=` | `<device>` | Pfad zum LVM-Device (nur bei Serverprofil).  
 `-f, --firewall=` | `<ip>` | Firewall-/Gateway-/Nameserver-Adresse (Standard x.x.x.254).  
 `-d, --domain=` | `<domain>` | Domänenname (Standard: linuxmuster.lan).  
@@ -39,7 +39,6 @@ linbo | /dev/vg_srv/linbo | /srv/linbo | 40G
 global | /dev/vg_srv/global | /srv/samba/global | 10G  
 default-school | /dev/vg_srv/default-school | /srv/samba/default-school | 40G  
 
-- docker: Die Pakete _docker_ und _docker-compose_ werden mit allen ihren Abhängigkeiten installiert.
 - ubuntu: Es werden keine zusätzliche Pakete installiert, Hostname mit Parameter `-t, --hostname=<hostname>` und IP/Netzmaske mit `-n, --ipnet=<ip/bitmask>` müssen zwingend angegeben werden.
 
 ### Beispiele  
@@ -49,12 +48,6 @@ default-school | /dev/vg_srv/default-school | /srv/samba/default-school | 40G
   - IP/Bitmask _10.0.0.1/16_,
   - Domänenname _linuxmuster.lan_
   - Gateway/DNS _10.0.0.254_
-- `lmn71-appliance -p docker -n 10.16.1.3/12 -d meineschule.de -u`
-  - Richtet Dockerhostprofil wie folgt ein:
-  - Hostname _docker_,
-  - IP/Bitmask _10.16.1.3/12_,
-  - Domänenname _meineschule.de_,
-  - Gateway/DNS _10.16.1.254_
 - `lmn71-appliance -p ubuntu -t testhost -n 10.16.1.10/12`
   - Richtet die Appliance wie folgt ein:
   - Hostname _testhost_,
@@ -75,5 +68,5 @@ default-school | /dev/vg_srv/default-school | /srv/samba/default-school | 40G
 `./lmn71-appliance -p server -u -l /dev/sdb`  
 - Appliance herunterfahren und Snapshot erstellen.  
 
-## Weitere Appliances vorbereiten
-Docker und weitere Appliances werden mit jeweils nur einer Festplatte erstellt. Die Vorgehensweise ist ansonsten analog zu derjenigen des Servers. Beispiele für Skriptaufrufe siehe oben.
+## Ubuntu-Appliances vorbereiten
+Generelle Ubuntu-Appliances berücksichtigen nur eine Festplatte bei der Vorbereitung. Die Vorgehensweise ist ansonsten analog zu derjenigen des Servers. Beispiele für Skriptaufrufe siehe oben.
