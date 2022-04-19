@@ -1,3 +1,12 @@
+linuxmuster-prepare (7.1.5-0) lmn71; urgency=low
+
+  * start linuxmuster-prepare only if profile is set (4d02fe2).
+  * Help update (d33c3d4).
+  * user password fix (c0f61cc).
+  * beautify code (3f824af).
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Tue, 19 Apr 2022 21:08:00 +0200
+
 linuxmuster-prepare (7.1.4-0) lmn71; urgency=low
 
   * update repo address and key.
