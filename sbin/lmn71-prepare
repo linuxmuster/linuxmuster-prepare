@@ -192,9 +192,8 @@ def replaceInFile(tfile, search, replace):
         os.unlink(bakfile)
     return rc
 
+
 # return detected network interfaces
-
-
 def detectedInterfaces():
     iface_list = netifaces.interfaces()
     iface_list.remove('lo')
@@ -205,9 +204,8 @@ def detectedInterfaces():
         iface_default = ''
     return iface_list, iface_default
 
+
 # return default network interface
-
-
 def getDefaultIface():
     # first try to get a single interface
     iface_list, iface_default = detectedInterfaces()
@@ -226,9 +224,8 @@ def getDefaultIface():
                 continue
     return iface_list, iface_default
 
+
 # test valid hostname
-
-
 def isValidHostname(hostname):
     try:
         if (len(hostname) > 63 or hostname[0] == '-' or hostname[-1] == '-'):
@@ -241,9 +238,8 @@ def isValidHostname(hostname):
     except:
         return False
 
+
 # test valid domainname
-
-
 def isValidDomainname(domainname):
     try:
         for label in domainname.split('.'):
@@ -253,9 +249,8 @@ def isValidDomainname(domainname):
     except:
         return False
 
+
 # test valid ipv4 address
-
-
 def isValidHostIpv4(ip):
     try:
         ipv4 = IP(ip)
@@ -271,9 +266,8 @@ def isValidHostIpv4(ip):
     except:
         return False
 
+
 # get issue name
-
-
 def getIssue():
     rc, content = readTextfile('/etc/issue')
     issue = content.split(' ')[1]
@@ -423,9 +417,8 @@ def do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broa
                 print("Invalid entry!")
     return iface, hostname, domainname, hostip, bitmask, netmask, network, broadcast, firewallip, gateway
 
+
 # lvm
-
-
 def do_lvm(pvdevice, vgname, lvmvols, quotamntopts):
     print('## LVM')
     # if volume group exists do nothing
@@ -494,9 +487,8 @@ def do_lvm(pvdevice, vgname, lvmvols, quotamntopts):
         sys.exit(1)
     return pvdevice
 
+
 # set quota mount options to fstab if no lvm is defined
-
-
 def do_fstab_root(quotamntopts):
     mntopts = quotamntopts + ',errors=remount-ro'
     config = FSTabConfig(path='/etc/fstab')
@@ -514,18 +506,16 @@ def do_fstab_root(quotamntopts):
             break
         count += 1
 
+
 # activate quota on server partitions
-
-
 def do_quota():
     print('# Activating quota.')
     subprocess.call('quotaoff -a', shell=True)
     subprocess.call('quotacheck -cvugam', shell=True)
     subprocess.call('quotaon -a', shell=True)
 
+
 # swap file
-
-
 def do_swap(swapsize):
     print('## Swapfile')
     gbsize = swapsize + 'G'
