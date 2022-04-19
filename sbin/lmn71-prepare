@@ -12,6 +12,7 @@ import getpass
 import netifaces
 import os
 import pathlib
+import pwd
 import re
 import reconfigure
 import socket
@@ -46,7 +47,7 @@ ipnr = ''
 rootpw_default = 'Muster!'
 rootpw = 'Muster!'
 profile_list = ['server', 'ubuntu']
-user_list = ['linuxmuster']
+user_list = ['linuxmuster', 'linuxadmin', 'lmn', 'lmnadmin']
 profile = ''
 pvdevice = ''
 vgname = 'vg_srv'
@@ -558,9 +559,8 @@ def do_swap(swapsize):
     subprocess.call('swapon ' + swapfile, shell=True)
     subprocess.call('swapon --show', shell=True)
 
+
 # root password
-
-
 def do_password(rootpw):
     print('## Passwords')
     printr('# root ... ')
@@ -570,19 +570,17 @@ def do_password(rootpw):
     else:
         print('Failed!')
     for item in user_list:
-        if os.path.isdir('/home/' + item):
+        try:
+            pwd.getpwnam(item)
             printr('# ' + item + ' ... ')
-        else:
             rc = subprocess.call(
                 'echo "' + item + ':' + rootpw + '" | chpasswd', shell=True)
-        if rc == 0:
             print('OK!')
-        else:
-            print('Failed!')
+        except KeyError:
+            continue
+
 
 # create ssh hostkeys
-
-
 def do_keys():
     print('## SSH host keys')
     hostkey_prefix = '/etc/ssh/ssh_host_'
