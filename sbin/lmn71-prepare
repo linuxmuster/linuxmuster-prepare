@@ -2,7 +2,7 @@
 #
 # lmn71-prepare
 # thomas@linuxmuster.net
-# 20211222
+# 20220419
 #
 
 import configparser
@@ -123,10 +123,10 @@ def usage(rc):
     sys.exit(rc)
 
 
-# test internet connection by archive.linuxmuster.net
-def internet(host="archive.linuxmuster.net", port=443, timeout=3):
+# test internet connection by deb.linuxmuster.net
+def internet(host="deb.linuxmuster.net", port=443, timeout=3):
     """
-    Host: archive.linuxmuster.net
+    Host: deb.linuxmuster.net
     OpenPort: 443/tcp
     Service: https (http protocol over TLS/SSL)
     """
