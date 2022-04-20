@@ -20,7 +20,7 @@ if not os.geteuid() == 0:
 def usage(rc):
     print('Installs linuxmuster.net package repo, downloads and installs linuxmuster-prepare package.')
     print('If profile option is set it initially prepares a linuxmuster.net ubuntu appliance.\n')
-    print('Usage: lmn71-appliance [options]')
+    print('Usage: lmn71-prepare [options]')
     print('\n[options] are:\n')
     print(
         '-t, --hostname=<hostname>   : Hostname to apply (optional, works only with')
