@@ -1,3 +1,9 @@
+linuxmuster-prepare (7.1.5-1) lmn71; urgency=low
+
+  * rebuild.
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Thu, 21 Apr 2022 10:38:00 +0200
+
 linuxmuster-prepare (7.1.5-0) lmn71; urgency=low
 
   * start linuxmuster-prepare only if profile is set (4d02fe2).
