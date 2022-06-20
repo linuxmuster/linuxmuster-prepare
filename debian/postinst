@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # thomas@linuxmuster.net
-# 20210401
+# 20220620
 #
 # see: dh_installdeb(1)
 
@@ -22,14 +22,6 @@ set -e
 case "$1" in
 
   configure)
-    # ensure python3 reconfigure is installed
-    echo -n "Checking for python3-reconfigure ... "
-    if /usr/bin/python3 -m pip list | grep ^reconfigure &> /dev/null; then
-      echo "installed."
-      exit 0
-    else
-      echo " not installed."
-    fi
 
     # install python3 reconfigure
     /usr/bin/python3 -m pip install reconfigure
