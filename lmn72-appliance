@@ -124,7 +124,7 @@ def writeTextfile(tfile, content, flag):
 # install repos
 print('## install lmn72 repo')
 urllib.request.urlretrieve(lmnkey_remote, lmnkey_local)
-writeTextfile(lmn72_list, lmn71_deb, 'w')
+writeTextfile(lmn72_list, lmn71_deb + '\n', 'w')
 writeTextfile(lmn72_list, lmn72_deb, 'a')
 
 
