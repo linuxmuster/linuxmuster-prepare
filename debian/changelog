@@ -1,3 +1,9 @@
+linuxmuster-prepare (7.1.6-0) lmn71; urgency=low
+
+  * Purge lxc packages (636666d).
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Fri, 5 Apr 2022 20:31:00 +0200
+
 linuxmuster-prepare (7.1.5-1) lmn71; urgency=low
 
   * rebuild.
