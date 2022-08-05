@@ -2,7 +2,7 @@
 #
 # lmn71-prepare
 # thomas@linuxmuster.net
-# 20220419
+# 20220805
 #
 
 import configparser
@@ -73,6 +73,7 @@ libdir = '/var/lib/linuxmuster'
 prepini = libdir + '/prepare.ini'
 setupini = libdir + '/setup.ini'
 srvpkgs = 'lvm2'
+purgepkgs = 'lxc lxc-utils lxcfs'
 bionicpkgs = 'netplan.io net-tools'
 swapfile = '/swap.img'
 
@@ -611,6 +612,8 @@ def do_updates(pkgs):
         sys.exit(1)
     print('## Installing updates and host specific software')
     subprocess.call('apt-get update', shell=True)
+    subprocess.call(
+        'DEBIAN_FRONTEND=noninteractive apt-get -y purge ' + purgepkgs, shell=True)
     subprocess.call(
         'DEBIAN_FRONTEND=noninteractive apt-get -y dist-upgrade', shell=True)
     subprocess.call(
