@@ -1,0 +1,14 @@
+#!/bin/sh
+#
+# disables ubuntu cloud  services
+# thomas@linuxmuster.net
+# 20220822
+#
+
+for u in `systemctl list-units | grep cloud- | awk '{print $1}'`; do
+  echo "## Disabling $u ..."
+  for c in stop disable mask; do
+    systemctl "$c" "$u"
+  done
+done
+
