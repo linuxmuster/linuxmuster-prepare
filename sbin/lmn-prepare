@@ -624,8 +624,6 @@ def do_updates(pkgs):
     subprocess.call(
         'DEBIAN_FRONTEND=noninteractive apt-get -y --allow-unauthenticated install ' + pkgs, shell=True)
     subprocess.call('apt-get clean && apt-get -y autoremove', shell=True)
-    # disable cloud services
-    subprocess.call('/usr/share/linuxmuster/prepare/disable-cloud-services', shell=True)
     updates = True
     return updates
 
