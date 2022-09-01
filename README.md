@@ -62,10 +62,10 @@ default-school | /dev/vg_srv/default-school | /srv/samba/default-school | 40G
 - [Ubuntu Server 18.04 Minimalinstallation](https://www.howtoforge.com/tutorial/ubuntu-minimal-server-install/) durchführen.
   - System in eine Partition auf HD 1 installieren (keine Swappartition),
   - HD 2 unkonfiguriert lassen.
-- Nach dem ersten Boot als root einloggen und Prepare-Skript herunterladen:
-`# wget https://raw.githubusercontent.com/linuxmuster/linuxmuster-prepare/master/lmn-appliance`
+- Nach dem ersten Boot als root einloggen und Prepare-Skript herunterladen:  
+  `# wget https://raw.githubusercontent.com/linuxmuster/linuxmuster-prepare/master/lmn-appliance`
 - Skript ausführbar machen und starten:
-`./lmn-appliance -p server -u -l /dev/sdb`
+  `./lmn-appliance -p server -u -l /dev/sdb`
 - Appliance herunterfahren und Snapshot erstellen.
 
 ## Ubuntu-Appliances vorbereiten
