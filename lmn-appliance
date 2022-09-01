@@ -1,10 +1,11 @@
 #!/usr/bin/python3
 #
-# lmn71-appliance
+# lmn72-appliance
 # thomas@linuxmuster.net
-# 20220419
+# 20220901
 #
 
+import configparser
 import getopt
 import os
 import subprocess
@@ -20,7 +21,7 @@ if not os.geteuid() == 0:
 def usage(rc):
     print('Installs linuxmuster.net package repo, downloads and installs linuxmuster-prepare package.')
     print('If profile option is set it initially prepares a linuxmuster.net ubuntu appliance.\n')
-    print('Usage: lmn71-appliance [options]')
+    print('Usage: lmn72-appliance [options]')
     print('\n[options] are:\n')
     print(
         '-t, --hostname=<hostname>   : Hostname to apply (optional, works only with')
@@ -86,12 +87,13 @@ if profile != '' and profile not in profile_list:
 
 
 # repo data
-lmn71key_remote = 'https://deb.linuxmuster.net/pub.gpg'
-lmn71key_local = '/etc/apt/trusted.gpg.d/linuxmuster.net.gpg'
+lmnkey_remote = 'https://deb.linuxmuster.net/pub.gpg'
+lmnkey_local = '/etc/apt/trusted.gpg.d/linuxmuster.net.gpg'
 lmn71_list = '/etc/apt/sources.list.d/lmn71.list'
+lmn72_list = '/etc/apt/sources.list.d/lmn72.list'
 lmn71_deb = 'deb https://deb.linuxmuster.net/ lmn71 main'
+lmn72_deb = 'deb https://deb.linuxmuster.net/ lmn72 main'
 pkgname = 'linuxmuster-prepare'
-rmpkgs = 'lxd lxd-client lxcfs lxc-common snapd'
 
 
 # return content of text file
@@ -120,10 +122,40 @@ def writeTextfile(tfile, content, flag):
         return False
 
 
+# get os release
+def os_release():
+    # read data
+    rc, content = readTextfile('/etc/os-release')
+    # insert a section
+    content = "[OS]\n" + content
+    # read the os data
+    os_data = configparser.ConfigParser()
+    os_data.read_string(content)
+    return os_data['OS']['ID'], os_data['OS']['VERSION_ID']
+
+
 # install repos
-print('## install lmn71 repo')
-urllib.request.urlretrieve(lmn71key_remote, lmn71key_local)
-writeTextfile(lmn71_list, lmn71_deb, 'w')
+id, version = os_release()
+if id != 'ubuntu':
+    print(id + ' is not the expected os.')
+    sys.exit(1)
+if version == '18.04':
+    lmn_version = '7.1'
+    lmn_list = lmn71_list
+    lmn_deb = lmn71_deb
+elif version == '22.04':
+    lmn_version = '7.2'
+    lmn_list = lmn72_list
+    lmn_deb = lmn72_deb
+else:
+    print(version + ' is not the expected version.')
+    sys.exit(1)
+print('## install lmn ' + lmn_version + ' repo')
+urllib.request.urlretrieve(lmnkey_remote, lmnkey_local)
+writeTextfile(lmn_list, lmn_deb + '\n', 'w')
+# 7.2 needs the 7.1 repo too
+if lmn_version == '7.2':
+    writeTextfile(lmn72_list, lmn71_deb + 'a')
 
 
 # get updates
@@ -131,12 +163,10 @@ print('## install software updates')
 subprocess.call('apt clean', shell=True)
 subprocess.call('apt update', shell=True)
 subprocess.call(
-    'DEBIAN_FRONTEND=noninteractive apt -y purge ' + rmpkgs, shell=True)
-subprocess.call(
     'DEBIAN_FRONTEND=noninteractive apt -y dist-upgrade', shell=True)
 
 
-# get lmn71 packages
+# get lmn72 packages
 print('## install ' + pkgname + ' package')
 subprocess.call(
     'DEBIAN_FRONTEND=noninteractive echo -e "y\ny\ny\n" | apt -y install ' + pkgname, shell=True)
@@ -144,7 +174,7 @@ subprocess.call(
 
 # invoke prepare script if profile is set
 if profile != '':
-    print('## invoke lmn71-prepare')
+    print('## invoke lmn-prepare')
     profile = ' -p ' + profile
-    subprocess.call('lmn71-prepare -i' + unattended + profile
+    subprocess.call('lmn-prepare -i' + unattended + profile
                     + hostname + domainname + firewallip + ipnet + pvdevice, shell=True)
