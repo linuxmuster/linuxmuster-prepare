@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 #
-# lmn71-prepare
+# lmn-prepare
 # thomas@linuxmuster.net
-# 20220822
+# 20220901
 #
 
 import configparser
@@ -73,7 +73,7 @@ libdir = '/var/lib/linuxmuster'
 prepini = libdir + '/prepare.ini'
 setupini = libdir + '/setup.ini'
 srvpkgs = 'lvm2'
-purgepkgs = 'lxc lxc-utils lxcfs'
+purgepkgs = 'lxc lxc-utils lxcfs snapd'
 bionicpkgs = 'netplan.io net-tools'
 swapfile = '/swap.img'
 
@@ -419,6 +419,13 @@ def do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broa
     return iface, hostname, domainname, hostip, bitmask, netmask, network, broadcast, firewallip, gateway
 
 
+# remove unnecessary stuff
+def do_cleaning():
+    print('## Remove unnecessary stuff')
+    subprocess.call('DEBIAN_FRONTEND=noninteractive apt-get -y purge ' + purgepkgs, shell=True)
+    subprocess.call('/usr/share/linuxmuster/prepare/disable-cloud-services', shell=True)
+
+
 # lvm
 def do_lvm(pvdevice, vgname, lvmvols, quotamntopts):
     print('## LVM')
@@ -612,8 +619,6 @@ def do_updates(pkgs):
         sys.exit(1)
     print('## Installing updates and host specific software')
     subprocess.call('apt-get update', shell=True)
-    subprocess.call(
-        'DEBIAN_FRONTEND=noninteractive apt-get -y purge ' + purgepkgs, shell=True)
     subprocess.call(
         'DEBIAN_FRONTEND=noninteractive apt-get -y dist-upgrade', shell=True)
     subprocess.call(
@@ -831,6 +836,7 @@ if initial:
     ipnr, pkgs = do_profile(profile)
     iface, hostname, domainname, hostip, bitmask, netmask, network, broadcast, firewallip, gateway = do_network(
         iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broadcast, firewallip, gateway, hostname, domainname, unattended, setup_mode)
+    do_cleaning()
     if profile == 'server':
         pvdevice = do_lvm(pvdevice, vgname, lvmvols, quotamntopts)
         if pvdevice == '':
