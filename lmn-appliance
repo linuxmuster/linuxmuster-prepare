@@ -156,7 +156,7 @@ urllib.request.urlretrieve(lmnkey_remote, lmnkey_local)
 writeTextfile(lmn_list, lmn_deb + '\n', 'w')
 # 7.2 needs the 7.1 repo too
 if lmn_version == '7.2':
-    writeTextfile(lmn72_list, lmn71_deb + 'a')
+    writeTextfile(lmn72_list, lmn71_deb, 'a')
 
 
 # get updates
