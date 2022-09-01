@@ -128,6 +128,7 @@ def os_release():
     rc, content = readTextfile('/etc/os-release')
     # insert a section
     content = "[OS]\n" + content
+    content = content.replace('"', '')
     # read the os data
     os_data = configparser.ConfigParser()
     os_data.read_string(content)
