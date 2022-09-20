@@ -20,9 +20,9 @@ lvmvols_default = 'var:10,linbo:40,global:10,default-school:100%FREE'
 
 # help
 def usage(rc):
-    print('Installs linuxmuster.net package repo, downloads and installs linuxmuster-prepare package.')
+    print('\nInstalls linuxmuster.net package repo, downloads and installs linuxmuster-prepare package.')
     print('If profile option is set it initially prepares a linuxmuster.net ubuntu appliance.\n')
-    print('Usage: lmn-appliance [options]')
+    print('\nUsage: lmn-appliance [options]')
     print('\n[options] are:\n')
     print('-t, --hostname=<hostname>   : Hostname to apply (optional, works only with')
     print('                              server profile).')
@@ -79,7 +79,7 @@ for o, a in opts:
     if o in ("-u", "--unattended"):
         unattended = ' -u'
     elif o in ("-p", "--profile"):
-        profile = ' -p ' + a
+        profile = a
     elif o in ("-t", "--hostname"):
         hostname = ' -t ' + a
     elif o in ("-v", "--volumes"):
@@ -97,9 +97,10 @@ for o, a in opts:
     else:
         assert False, "unhandled option"
         usage(1)
-if profile != '' and profile not in profile_list:
-    usage(1)
 
+if profile != '' and profile not in profile_list:
+    print('\nUnknown profile: ' + profile + '.')
+    usage(1)
 
 # repo data
 lmnkey_remote = 'https://deb.linuxmuster.net/pub.gpg'
