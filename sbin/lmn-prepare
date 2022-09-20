@@ -83,7 +83,7 @@ swapfile = '/swap.img'
 
 # help
 def usage(rc):
-    print('Usage: lmn71-prepare [options]')
+    print('Usage: lmn-prepare [options]')
     print('\n [options] are:\n')
     print('-x, --force                 : Force run on an already configured system.')
     print('-i, --initial               : Prepare the appliance initially for rollout.')
