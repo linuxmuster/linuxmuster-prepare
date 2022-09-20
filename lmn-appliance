@@ -56,7 +56,7 @@ def usage(rc):
 
 # get cli args
 try:
-    opts, args = getopt.getopt(sys.argv[1:], "d:f:hl:n:p:t:u", [
+    opts, args = getopt.getopt(sys.argv[1:], "d:f:hl:n:p:t:uv:", [
                                "domain=", "firewall=", "help", "pvdevice=", "ipnet=", "profile=", "hostname=", "unattended"])
 except getopt.GetoptError as err:
     # print help information and exit:
