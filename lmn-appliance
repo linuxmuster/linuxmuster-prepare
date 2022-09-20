@@ -12,10 +12,11 @@ import subprocess
 import sys
 import urllib.request
 
-# check if the user and go on
+# check for root user and go on
 if not os.geteuid() == 0:
     sys.exit('Please start the script as root user.\n You can use the command "sudo -i" to achieve this.')
 
+lvmvols_default = 'var:10,linbo:40,global:10,default-school:100%FREE'
 
 # help
 def usage(rc):
