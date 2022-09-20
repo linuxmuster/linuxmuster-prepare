@@ -21,7 +21,7 @@ if not os.geteuid() == 0:
 def usage(rc):
     print('Installs linuxmuster.net package repo, downloads and installs linuxmuster-prepare package.')
     print('If profile option is set it initially prepares a linuxmuster.net ubuntu appliance.\n')
-    print('Usage: lmn72-appliance [options]')
+    print('Usage: lmn-appliance [options]')
     print('\n[options] are:\n')
     print('-t, --hostname=<hostname>   : Hostname to apply (optional, works only with')
     print('                              server profile).')
@@ -42,6 +42,14 @@ def usage(rc):
     print('-d, --domain=<domainname>   : Domainname (default linuxmuster.lan).')
     print('-u, --unattended            : Unattended mode, do not ask, use defaults.')
     print('-h, --help                  : Print this help.')
+    print('\nNote on lvm volumes:')
+    print('- Default value for volumes is:')
+    print('  "' + lvmvols_default + '".')
+    print('- At least "linbo", "global" and "default-school" must be given.')
+    print('- "nn%FREE" means "use nn% of the remaining free space of the device for this volume".')
+    print('  Example: "linbo:50%FREE,global:10,default-school:100%FREE" means "linbo" takes 50% of')
+    print('  the volume, "global" takes 10G and "default-school" finally takes all of the rest.')
+    print('- "global" and "default-school" are mounted with quota options.')
     sys.exit(rc)
 
 
