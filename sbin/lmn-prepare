@@ -2,7 +2,7 @@
 #
 # lmn-prepare
 # thomas@linuxmuster.net
-# 20220901
+# 20220920
 #
 
 import configparser
@@ -51,8 +51,9 @@ user_list = ['linuxmuster', 'linuxadmin', 'lmn', 'lmnadmin']
 profile = ''
 pvdevice = ''
 vgname = 'vg_srv'
-lvmvols = [('var', '10G', '/var'), ('linbo', '40G', '/srv/linbo'), ('global', '10G',
-                                                                    '/srv/samba/global'), ('default-school', '100%FREE', '/srv/samba/schools/default-school')]
+lvmmand = ['linbo', 'global', 'default-school']
+lvmvols = None
+lvmvols_default = 'var:10,linbo:40,global:10,default-school:100%FREE'
 quotamntopts = 'user_xattr,acl,usrjquota=aquota.user,grpjquota=aquota.group,jqfmt=vfsv0,barrier=1'
 unattended = False
 # ipset = False
@@ -88,22 +89,23 @@ def usage(rc):
     print('-i, --initial               : Prepare the appliance initially for rollout.')
     print('-s, --setup                 : Further appliance setup (network, swapsize).')
     print('                              Note: You have to use either -i or -s.')
-    print(
-        '-t, --hostname=<hostname>   : Hostname to apply (optional, works only with')
+    print('-t, --hostname=<hostname>   : Hostname to apply (optional, works only with')
     print('                              server profile).')
     print('-n, --ipnet=<ip/bitmask>    : Ip address and bitmask assigned to the host')
-    print(
-        '                              (optional, default is 10.0.0.x/16, depending')
+    print('                              (optional, default is 10.0.0.x/16, depending')
     print('                              on the profile).')
     print('-p, --profile=<profile>     : Host profile to apply, mandatory. Expected')
     print('                              values are "server" or "ubuntu".')
     print('                              Profile name is also used as hostname, except for')
     print('                              "server" if set with -t.')
-    print(
-        '-c, --createcert            : Create self signed server cert (to be used only')
+    print('-c, --createcert            : Create self signed server cert (to be used only')
     print('                              in setup mode and with ubuntu profile).')
-    print('-l, --pvdevice=<device>     : Initially sets up lmv on the given device')
-    print('                              (server profile only).')
+    print('-l, --pvdevice=<device>     : Initially sets up lvm on the given device (server')
+    print('                              profile only). <device> can be a partition or an')
+    print('                              entire disk.')
+    print('-v, --volumes=<volumelist>  : List of lvm volumes to create (to be used together')
+    print('                              with -l/--pvdevice). Syntax (size in GiB):')
+    print('                              <name>:<size>,<name>:<size>,...')
     print('-f, --firewall=<ip>         : Firewall ip address (default *.*.*.254).')
     print('-g, --gateway=<ip>          : Gateway ip address (default is firewall ip).')
     print('-d, --domain=<domainname>   : Domainname (default linuxmuster.lan).')
@@ -115,13 +117,21 @@ def usage(rc):
     print('-e, --default               : Sets default (10.0.0.0/16) network addresses,')
     print('                              triggers setup and unattended modes, needs profile')
     print('                              (uses saved profile from initial run).')
-    print('-o, --do-it-like-babo       : Like above, but uses babo (10.16.0.0/12) network')
+    print('-o, --do-it-like-babo       : Like above, but uses "babo" (10.16.0.0/12) network')
     print('                              addresses.')
     print('-j, --no-keys               : Do not create ssh keys')
     print('                              (only in setup mode and together with -x).')
     print('-k, --no-pw                 : Do not set admin password')
     print('                              (only in setup mode and together with -x).')
     print('-h, --help                  : Print this help.')
+    print('\nNote on lvm volumes:')
+    print('- Default value for volumes is:')
+    print('  "' + lvmvols_default + '".')
+    print('- At least "linbo", "global" and "default-school" must be given.')
+    print('- "nn%FREE" means "use nn% of the remaining free space of the device for this volume".')
+    print('  Example: "linbo:50%FREE,global:10,default-school:100%FREE" means "linbo" takes 50% of')
+    print('  the volume, "global" takes 10G and "default-school" finally takes all of the rest.')
+    print('- "global" and "default-school" are mounted with quota options.')
     sys.exit(rc)
 
 
@@ -311,8 +321,7 @@ def do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broa
         iface = iface_default
     if (unattended and iface == '') or not unattended:
         while True:
-            iface = input('Enter network interface to use '
-                          + str(iface_list) + ': ')
+            iface = input('Enter network interface to use ' + str(iface_list) + ': ')
             iface = iface or iface_default
             if iface in iface_list:
                 break
@@ -426,16 +435,62 @@ def do_cleaning():
     subprocess.call('/usr/share/linuxmuster/prepare/disable-cloud-services', shell=True)
 
 
+# return lvm volume mountpoint
+def getVolmount(volname):
+    if volname == 'var':
+        volmount = '/' + volname
+    elif volname == 'linbo':
+        volmount = '/srv/' + volname
+    elif volname == 'global':
+        volmount = '/srv/samba/' + volname
+    elif volname == 'default-school':
+        volmount = '/srv/samba/schools/' + volname
+    else:
+        volmount = None
+    return volmount
+
+
+# create lvm volumes array
+def do_lvmvols_array():
+    # test if all mandatory volumes are present
+    for volume in lvmmand:
+        if volume not in lvmvols:
+            print('Volume ' + volume + ' is not defined!')
+            usage(1)
+    # create array
+    lvmvols_array = []
+    try:
+        for volume in lvmvols.split(','):
+            volume_array = volume.split(':')
+            volname = volume_array[0]
+            volsize = volume_array[1]
+            volmount = getVolmount(volname)
+            # test if volname is valid
+            volvalid = re.match('^[\w-]+$', volname) is not None
+            if not volvalid or volmount == None:
+                print(volname + ' is no valid volume name.')
+                usage(1)
+            # test size parameter
+            try:
+                int(volsize.split('%', 1)[0])
+            except Exception as error:
+                print(volsize + ' is no valid volume size.')
+                usage(1)
+            volume_array.append(volmount)
+            lvmvols_array.append(volume_array)
+    except Exception as error:
+        print(Exception)
+        usage(1)
+    return lvmvols_array
+
 # lvm
 def do_lvm(pvdevice, vgname, lvmvols, quotamntopts):
     print('## LVM')
     # if volume group exists do nothing
     vgdisplay = os.popen('vgdisplay').read()
     if ' ' + vgname + '\n' in vgdisplay:
-        pvdevice = os.popen(
-            "pvdisplay | grep 'PV Name' | awk '{ print $3 }'").read().replace('\n', '')
-        print('# Volume group ' + vgname + ' with device '
-              + pvdevice + ' exists already!')
+        pvdevice = os.popen("pvdisplay | grep 'PV Name' | awk '{ print $3 }'").read().replace('\n', '')
+        print('# Volume group ' + vgname + ' with device ' + pvdevice + ' exists already!')
         return pvdevice
     # ask for pvdevice
     if not unattended:
@@ -460,13 +515,14 @@ def do_lvm(pvdevice, vgname, lvmvols, quotamntopts):
     print('# Creating volume group ' + vgname + '.')
     if subprocess.call('vgcreate ' + vgname + ' ' + pvdevice, shell=True) != 0:
         sys.exit(1)
-    for item in lvmvols:
+    var_on_lvm = False
+    for item in lvmvols_array:
         volname = item[0]
         volsize = item[1]
         if '%' in volsize:
             volsize = ' -l ' + volsize
         else:
-            volsize = ' -L ' + volsize
+            volsize = ' -L ' + volsize + 'G'
         volmnt = item[2]
         subprocess.call('mkdir -p ' + volmnt, shell=True)
         volpath = '/dev/' + vgname + '/' + volname
@@ -483,15 +539,20 @@ def do_lvm(pvdevice, vgname, lvmvols, quotamntopts):
         else:
             mntopts = 'defaults'
         fstab = fstab + volpath + ' ' + volmnt + ' ext4 ' + mntopts + ' 0 1\n'
+        if volmnt == '/var':
+            var_on_lvm = True
     print('# Writing /etc/fstab.')
     if not writeTextfile('/etc/fstab', fstab, 'w'):
         sys.exit(1)
-    print('# Moving /var.')
-    if subprocess.call('mount /dev/' + vgname + '/var /mnt', shell=True) != 0:
-        sys.exit(1)
-    if subprocess.call('rsync -a /var/ /mnt/', shell=True) != 0:
-        sys.exit(1)
-    if subprocess.call('umount /mnt && rm -rf /var/* && mount -a', shell=True) != 0:
+    if var_on_lvm:
+        print('# Moving /var.')
+        if subprocess.call('mount /dev/' + vgname + '/var /mnt', shell=True) != 0:
+            sys.exit(1)
+        if subprocess.call('rsync -a /var/ /mnt/', shell=True) != 0:
+            sys.exit(1)
+        if subprocess.call('umount /mnt && rm -rf /var/*', shell=True) != 0:
+            sys.exit(1)
+    if subprocess.call('mount -a', shell=True) != 0:
         sys.exit(1)
     return pvdevice
 
@@ -518,6 +579,7 @@ def do_fstab_root(quotamntopts):
 # activate quota on server partitions
 def do_quota():
     print('# Activating quota.')
+    subprocess.call('mount -a', shell=True)
     subprocess.call('quotaoff -a', shell=True)
     subprocess.call('quotacheck -cvugam', shell=True)
     subprocess.call('quotaon -a', shell=True)
@@ -534,20 +596,17 @@ def do_swap(swapsize):
     subprocess.call('rm ' + swapfile, shell=True)
     if unattended == True:
         try:
-            subprocess.call('fallocate -l ' + gbsize
-                            + ' ' + swapfile, shell=True)
+            subprocess.call('fallocate -l ' + gbsize + ' ' + swapfile, shell=True)
         except:
             print('Cannot create ' + swapfile + '!')
             sys.exit(1)
     else:
         while True:
             defaultsize = swapsize
-            swapsize = input(
-                'Enter the size of the swapfile in GB [' + defaultsize + ']: ')
+            swapsize = input('Enter the size of the swapfile in GB [' + defaultsize + ']: ')
             swapsize = swapsize or defaultsize
             gbsize = swapsize + 'G'
-            rc = subprocess.call('fallocate -l ' + gbsize
-                                 + ' ' + swapfile, shell=True)
+            rc = subprocess.call('fallocate -l ' + gbsize + ' ' + swapfile, shell=True)
             if rc == 0:
                 break
             else:
@@ -571,8 +630,7 @@ def do_password(rootpw):
         try:
             pwd.getpwnam(item)
             printr('# ' + item + ' ... ')
-            rc = subprocess.call(
-                'echo "' + item + ':' + rootpw + '" | chpasswd', shell=True)
+            rc = subprocess.call('echo "' + item + ':' + rootpw + '" | chpasswd', shell=True)
             print('OK!')
         except KeyError:
             continue
@@ -587,8 +645,7 @@ def do_keys():
     for a in crypto_list:
         printr(' * ' + a + ' host key:')
         try:
-            subprocess.call('ssh-keygen -t ' + a + ' -f '
-                            + hostkey_prefix + a + '_key -N ""', shell=True)
+            subprocess.call('ssh-keygen -t ' + a + ' -f ' + hostkey_prefix + a + '_key -N ""', shell=True)
             print(' Success!')
         except:
             print(' Failed!')
@@ -607,9 +664,9 @@ def do_sslcert(profile, domainname):
     subprocess.call('openssl genrsa -out ' + keyfile + ' 2048', shell=True)
     subprocess.call('chmod 640 ' + keyfile, shell=True)
     subprocess.call('echo -e "\n\n\n' + domainname + '\n' + profile + '\n' + profile
-                    + '\n\n\n\n" | openssl req -new -key ' + keyfile + ' -out ' + csrfile, shell=True)
+        + '\n\n\n\n" | openssl req -new -key ' + keyfile + ' -out ' + csrfile, shell=True)
     subprocess.call('openssl x509 -req -days ' + days + ' -in '
-                    + csrfile + ' -signkey ' + keyfile + ' -out ' + certfile, shell=True)
+        + csrfile + ' -signkey ' + keyfile + ' -out ' + certfile, shell=True)
 
 
 # host specific software if internet connection is available
@@ -619,10 +676,8 @@ def do_updates(pkgs):
         sys.exit(1)
     print('## Installing updates and host specific software')
     subprocess.call('apt-get update', shell=True)
-    subprocess.call(
-        'DEBIAN_FRONTEND=noninteractive apt-get -y dist-upgrade', shell=True)
-    subprocess.call(
-        'DEBIAN_FRONTEND=noninteractive apt-get -y --allow-unauthenticated install ' + pkgs, shell=True)
+    subprocess.call('DEBIAN_FRONTEND=noninteractive apt-get -y dist-upgrade', shell=True)
+    subprocess.call('DEBIAN_FRONTEND=noninteractive apt-get -y --allow-unauthenticated install ' + pkgs, shell=True)
     subprocess.call('apt-get clean && apt-get -y autoremove', shell=True)
     updates = True
     return updates
@@ -666,17 +721,20 @@ def print_values(profile, hostname, domainname, hostip, netmask, firewallip, ifa
     print('# Swapsize  : ' + swapsize + 'G')
     if pvdevice != '':
         print('# LVM device: ' + pvdevice)
+        print('# LVM vlms  : ' + lvmvols)
 
 ## functions end
 
 
 subprocess.call('clear')
-print('### lmn71-prepare')
+print('### lmn-prepare')
 
 # get cli args
 try:
-    opts, args = getopt.getopt(sys.argv[1:], "a:bcd:ef:g:hijkl:n:op:r:st:uw:x", ["rootpw=", "reboot", "createcert", "domain=", "default", "firewall=", "gateway=", "help",
-                                                                                 "initial", "no-keys", "no-pw", "pvdevice=", "ipnet=", "profile=", "do-it-like-babo", "serverip=", "setup", "hostname=", "unattended", "swapsize=", "force"])
+    opts, args = getopt.getopt(sys.argv[1:], "a:bcd:ef:g:hijkl:n:op:r:st:uv:w:x",
+        ["rootpw=", "reboot", "createcert", "domain=", "default", "firewall=", "gateway=", "help",
+        "initial", "no-keys", "no-pw", "pvdevice=", "volumes=", "ipnet=", "profile=",
+        "do-it-like-babo", "serverip=", "setup", "hostname=", "unattended", "swapsize=", "force"])
 except getopt.GetoptError as err:
     # print help information and exit:
     print(err)  # will print something like "option -a not recognized"
@@ -727,6 +785,8 @@ for o, a in opts:
         hostname = a
     elif o in ("-l", "--pvdevice"):
         pvdevice = a
+    elif o in ("-v", "--volumes"):
+        lvmvols = a
     elif o in ("-r", "--serverip"):
         serverip = a
     elif o in ("-b", "--reboot"):
@@ -804,11 +864,15 @@ if setup == False and nopw == True:
 if force == False and nopw == True:
     print("-k can only be used together with -x!")
     usage(1)
+# lvmvols
+if lvmvols == None:
+    lvmvols = lvmvols_default
 # pvdevice
 if pvdevice != '':
     if not pathlib.Path(pvdevice).is_block_device():
         print(f'# {pvdevice} is not a block device!')
         sys.exit(1)
+    lvmvols_array = do_lvmvols_array()
 # swapsize
 if not str.isdigit(swapsize):
     usage(1)
@@ -833,10 +897,11 @@ if initial:
     rootpw = rootpw_default
     ipnr, pkgs = do_profile(profile)
     iface, hostname, domainname, hostip, bitmask, netmask, network, broadcast, firewallip, gateway = do_network(
-        iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broadcast, firewallip, gateway, hostname, domainname, unattended, setup_mode)
+        iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broadcast, firewallip, gateway, hostname,
+        domainname, unattended, setup_mode)
     do_cleaning()
     if profile == 'server':
-        pvdevice = do_lvm(pvdevice, vgname, lvmvols, quotamntopts)
+        pvdevice = do_lvm(pvdevice, vgname, lvmvols_array, quotamntopts)
         if pvdevice == '':
             do_fstab_root(quotamntopts)
         do_quota()
@@ -849,7 +914,8 @@ if initial:
 elif setup:
     ipnr, pkgs = do_profile(profile)
     iface, hostname, domainname, hostip, bitmask, netmask, network, broadcast, firewallip, gateway = do_network(
-        iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broadcast, firewallip, gateway, hostname, domainname, unattended, setup_mode)
+        iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broadcast, firewallip, gateway, hostname,
+        domainname, unattended, setup_mode)
     do_swap(swapsize)
     # write hostname before keys and certificates were created
     writeTextfile('/etc/hostname', hostname + '.' + domainname, 'w')
@@ -916,8 +982,7 @@ content = hostname + '.' + domainname
 writeTextfile(outfile, content, 'w')
 
 # print values
-print_values(profile, hostname, domainname, hostip,
-             netmask, firewallip, iface, swapsize, pvdevice)
+print_values(profile, hostname, domainname, hostip, netmask, firewallip, iface, swapsize, pvdevice)
 
 print('\n### Finished - a reboot is necessary!')
 
