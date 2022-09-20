@@ -2,7 +2,7 @@
 #
 # lmn72-appliance
 # thomas@linuxmuster.net
-# 20220901
+# 20220920
 #
 
 import configparser
@@ -23,18 +23,21 @@ def usage(rc):
     print('If profile option is set it initially prepares a linuxmuster.net ubuntu appliance.\n')
     print('Usage: lmn72-appliance [options]')
     print('\n[options] are:\n')
-    print(
-        '-t, --hostname=<hostname>   : Hostname to apply (optional, works only with')
+    print('-t, --hostname=<hostname>   : Hostname to apply (optional, works only with')
     print('                              server profile).')
     print('-n, --ipnet=<ip/bitmask>    : Ip address and bitmask assigned to the host')
-    print(
-        '                              (optional, default is 10.0.0.x/16, depending')
+    print('                              (optional, default is 10.0.0.x/16, depending')
     print('                              on the profile).')
     print('-p, --profile=<profile>     : Host profile to apply, mandatory. Expected')
     print('                              values are "server" or "ubuntu".')
     print('                              Profile name is also used as hostname, except for')
     print('                              "server" if set with -t.')
-    print('-l, --pvdevice=<device>     : Device to use for lvm (server profile only).')
+    print('-l, --pvdevice=<device>     : Initially sets up lvm on the given device (server')
+    print('                              profile only). <device> can be a partition or an')
+    print('                              entire disk.')
+    print('-v, --volumes=<volumelist>  : List of lvm volumes to create (to be used together')
+    print('                              with -l/--pvdevice). Syntax (size in GiB):')
+    print('                              <name>:<size>,<name>:<size>,...')
     print('-f, --firewall=<firewallip> : Firewall/gateway ip (default *.254).')
     print('-d, --domain=<domainname>   : Domainname (default linuxmuster.lan).')
     print('-u, --unattended            : Unattended mode, do not ask, use defaults.')
@@ -58,6 +61,7 @@ hostname = ''
 domainname = ''
 firewallip = ''
 ipnet = ''
+volumes = ''
 pvdevice = ''
 profile_list = ['server', 'ubuntu']
 
@@ -66,9 +70,11 @@ for o, a in opts:
     if o in ("-u", "--unattended"):
         unattended = ' -u'
     elif o in ("-p", "--profile"):
-        profile = a
+        profile = ' -p ' + a
     elif o in ("-t", "--hostname"):
         hostname = ' -t ' + a
+    elif o in ("-v", "--volumes"):
+        volumes = ' -v ' + a
     elif o in ("-l", "--pvdevice"):
         pvdevice = ' -l ' + a
     elif o in ("-d", "--domain"):
@@ -163,14 +169,12 @@ if lmn_version == '7.2':
 print('## install software updates')
 subprocess.call('apt clean', shell=True)
 subprocess.call('apt update', shell=True)
-subprocess.call(
-    'DEBIAN_FRONTEND=noninteractive apt -y dist-upgrade', shell=True)
+subprocess.call('DEBIAN_FRONTEND=noninteractive apt -y dist-upgrade', shell=True)
 
 
 # get lmn72 packages
 print('## install ' + pkgname + ' package')
-subprocess.call(
-    'DEBIAN_FRONTEND=noninteractive echo -e "y\ny\ny\n" | apt -y install ' + pkgname, shell=True)
+subprocess.call('DEBIAN_FRONTEND=noninteractive echo -e "y\ny\ny\n" | apt -y install ' + pkgname, shell=True)
 
 
 # invoke prepare script if profile is set
@@ -178,4 +182,4 @@ if profile != '':
     print('## invoke lmn-prepare')
     profile = ' -p ' + profile
     subprocess.call('lmn-prepare -i' + unattended + profile
-                    + hostname + domainname + firewallip + ipnet + pvdevice, shell=True)
+                    + hostname + domainname + firewallip + ipnet + volumes + pvdevice, shell=True)
