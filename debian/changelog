@@ -1,3 +1,9 @@
+linuxmuster-prepare (7.1.9-0) lmn71; urgency=low
+
+  * New parameter -v|--volumes for custom lvm volume creation (ca26c71).
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Tue, 20 Sep 2022 18:55:00 +0200
+
 linuxmuster-prepare (7.1.8-0) lmn71; urgency=low
 
   * Rename lmn71-prepare to lmn-prepare, do cleaning stuff before lvm creation (626b0ee, 871095c).
