@@ -1,8 +1,8 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 #
-# lmn72-appliance
+# lmn-appliance
 # thomas@linuxmuster.net
-# 20220920
+# 20221126
 #
 
 import configparser
