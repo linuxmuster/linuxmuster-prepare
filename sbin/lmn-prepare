@@ -2,7 +2,7 @@
 #
 # lmn-prepare
 # thomas@linuxmuster.net
-# 20220920
+# 20221209
 #
 
 import configparser
@@ -325,8 +325,7 @@ def do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broa
             iface = iface or iface_default
             if iface in iface_list:
                 break
-            else:
-                print("Invalid entry!")
+            print("Invalid entry!")
     # ip address & netmask
     if setup_mode == 'babo':
         ipnet = ipnet_babo + ipnr + '/' + bitmask_babo
@@ -371,8 +370,8 @@ def do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broa
             print('Invalid firewall ip: ' + firewallip)
             sys.exit(1)
     else:
+        defaultip = firewallip
         while True:
-            defaultip = firewallip
             firewallip = input(
                 'Enter firewall ip address [' + firewallip + ']: ')
             firewallip = firewallip or defaultip
@@ -384,8 +383,8 @@ def do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broa
     if gateway == '':
         gateway = firewallip
     if not unattended:
+        defaultip = gateway
         while True:
-            defaultip = gateway
             gateway = input('Enter gateway ip address [' + gateway + ']: ')
             gateway = gateway or defaultip
             if isValidHostIpv4(gateway):
@@ -451,7 +450,7 @@ def getVolmount(volname):
 
 
 # create lvm volumes array
-def do_lvmvols_array():
+def do_lvmvols_array(lvmvols, lvmmand):
     # test if all mandatory volumes are present
     for volume in lvmmand:
         if volume not in lvmvols:
@@ -480,11 +479,11 @@ def do_lvmvols_array():
             lvmvols_array.append(volume_array)
     except Exception as error:
         print(Exception)
-        usage(1)
+        return None
     return lvmvols_array
 
 # lvm
-def do_lvm(pvdevice, vgname, lvmvols, quotamntopts):
+def do_lvm(pvdevice, vgname, lvmvols, lvmmand, quotamntopts):
     print('## LVM')
     # if volume group exists do nothing
     vgdisplay = os.popen('vgdisplay').read()
@@ -492,21 +491,29 @@ def do_lvm(pvdevice, vgname, lvmvols, quotamntopts):
         pvdevice = os.popen("pvdisplay | grep 'PV Name' | awk '{ print $3 }'").read().replace('\n', '')
         print('# Volume group ' + vgname + ' with device ' + pvdevice + ' exists already!')
         return pvdevice
-    # ask for pvdevice
+    # ask for pvdevice and lvmvols
     if not unattended:
+        # save values
+        pvdevice_saved = pvdevice
+        lvmvols_saved = lvmvols
         while True:
             pvdevice = input(
                 'Enter physical device to use for LVM [' + pvdevice + ']: ')
+            pvdevice = pvdevice or pvdevice_saved
             if pvdevice == '':
-                break
+                # return if no pvdevice is entered
+                return None
             elif pathlib.Path(pvdevice).is_block_device():
-                break
-            else:
-                pvdevice = ''
-                print("Invalid entry!")
-    if pvdevice == '':
-        # return if no pvdevice is entered
-        return pvdevice
+                lvmvols = input(
+                    'Enter lvm volumes definition [' + lvmvols + ']: ')
+                lvmvols = lvmvols or lvmvols_saved
+                if lvmvols == '':
+                    # return if no lvm volume definition is entered
+                    return None
+                lvmvols_array = do_lvmvols_array(lvmvols, lvmmand)
+                if lvmvols_array is not None:
+                    break
+            print("Invalid entry!")
     rc, fstab = readTextfile('/etc/fstab')
     fstab = fstab + '\n'
     print('# Creating physical volume ' + pvdevice + '.')
@@ -719,7 +726,7 @@ def print_values(profile, hostname, domainname, hostip, netmask, firewallip, ifa
     print('# Gateway   : ' + gateway)
     print('# Interface : ' + iface)
     print('# Swapsize  : ' + swapsize + 'G')
-    if pvdevice != '':
+    if pvdevice is not None:
         print('# LVM device: ' + pvdevice)
         print('# LVM vlms  : ' + lvmvols)
 
@@ -872,7 +879,6 @@ if pvdevice != '':
     if not pathlib.Path(pvdevice).is_block_device():
         print(f'# {pvdevice} is not a block device!')
         sys.exit(1)
-    lvmvols_array = do_lvmvols_array()
 # swapsize
 if not str.isdigit(swapsize):
     usage(1)
@@ -901,8 +907,8 @@ if initial:
         domainname, unattended, setup_mode)
     do_cleaning()
     if profile == 'server':
-        pvdevice = do_lvm(pvdevice, vgname, lvmvols_array, quotamntopts)
-        if pvdevice == '':
+        pvdevice = do_lvm(pvdevice, vgname, lvmvols, lvmmand, quotamntopts)
+        if pvdevice is None:
             do_fstab_root(quotamntopts)
         do_quota()
     updates = do_updates(pkgs)
