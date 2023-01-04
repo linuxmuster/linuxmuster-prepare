@@ -1,3 +1,10 @@
+linuxmuster-prepare (7.2.0-0) lmn71; urgency=low
+
+  * Fix #24: lvm default value for volume not set in action (d0d36bd).
+  * lmn-prepare refactor.
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Wed, 04 Jan 2023 12:36:40 +0100
+
 linuxmuster-prepare (7.1.9-0) lmn71; urgency=low
 
   * New parameter -v|--volumes for custom lvm volume creation (ca26c71).
