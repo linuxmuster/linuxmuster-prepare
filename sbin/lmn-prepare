@@ -2,7 +2,7 @@
 #
 # lmn-prepare
 # thomas@linuxmuster.net
-# 20221209
+# 20230104
 #
 
 import configparser
@@ -24,40 +24,40 @@ from reconfigure.configs import FSTabConfig
 
 
 # global values
-hostname = ''
-serverip = ''
-hostip = ''
-firewallip = ''
-gateway = ''
-ipnet = ''
+hostname = None
+hostip = None
+firewallip = None
+gateway = None
+ipnet = None
 ipnet_default = '10.0.0.'
 bitmask_default = '16'
 ipnet_babo = '10.16.1.'
 bitmask_babo = '12'
-iface = ''
-iface_default = ''
-network = ''
-bitmask = ''
-netmask = ''
-broadcast = ''
+serverip = ''
+iface = None
+iface_default = None
+network = None
+bitmask = None
+netmask = None
+broadcast = None
 domainname = 'linuxmuster.lan'
 swapsize = '2'
-pkgs = ''
-ipnr = ''
+pkgs = None
+ipnr = None
 rootpw_default = 'Muster!'
 rootpw = 'Muster!'
 profile_list = ['server', 'ubuntu']
 user_list = ['linuxmuster', 'linuxadmin', 'lmn', 'lmnadmin']
-profile = ''
-pvdevice = ''
+profile = None
+profile_ini = None
+pvdevice = None
 vgname = 'vg_srv'
+vg_exists = False
 lvmmand = ['linbo', 'global', 'default-school']
 lvmvols = None
 lvmvols_default = 'var:10,linbo:40,global:10,default-school:100%FREE'
 quotamntopts = 'user_xattr,acl,usrjquota=aquota.user,grpjquota=aquota.group,jqfmt=vfsv0,barrier=1'
 unattended = False
-# ipset = False
-fwset = False
 initial = False
 setup = False
 reboot = False
@@ -67,15 +67,14 @@ iniread = False
 createcert = False
 nokeys = False
 nopw = False
-setup_mode = ''
+setup_mode = None
 sharedir = '/usr/share/linuxmuster/prepare'
 templates = sharedir + '/templates'
 libdir = '/var/lib/linuxmuster'
 prepini = libdir + '/prepare.ini'
 setupini = libdir + '/setup.ini'
-srvpkgs = 'lvm2'
 purgepkgs = 'lxc lxc-utils lxcfs snapd'
-bionicpkgs = 'netplan.io net-tools'
+srvpkgs = 'linuxmuster-base7 linuxmuster-linbo7 linuxmuster-webui7 linuxmuster-linbo-gui7 sophomorix-samba'
 swapfile = '/swap.img'
 
 
@@ -212,15 +211,15 @@ def detectedInterfaces():
     if iface_count == 1:
         iface_default = iface_list[0]
     else:
-        iface_default = ''
+        iface_default = None
     return iface_list, iface_default
 
 
-# return default network interface
+# returns default network interface
 def getDefaultIface():
     # first try to get a single interface
     iface_list, iface_default = detectedInterfaces()
-    if iface_default != '':
+    if iface_default is not None:
         return iface_list, iface_default
     # second if more than one get it by default route
     route = "/proc/net/route"
@@ -234,6 +233,72 @@ def getDefaultIface():
             except:
                 continue
     return iface_list, iface_default
+
+
+# returns entered interface name
+def inputIface(iface, iface_default, iface_list):
+    while True:
+        iface = input('Enter network interface to use ' + str(iface_list) + ': ')
+        iface = iface or iface_default
+        if iface in iface_list:
+            return iface
+        print("Invalid entry!")
+
+
+# returns entered network address
+def inputIpnet(ipnet):
+    ipnet_saved = ipnet
+    ipnet = input('Enter host ip address with net or bitmask [' + ipnet + ']: ')
+    return ipnet or ipnet_saved
+
+
+# returns entered firewall ip
+def inputFirewallip(firewallip):
+    firewallip_saved = firewallip
+    firewallip = input('Enter firewall ip address [' + firewallip + ']: ')
+    return firewallip or firewallip_saved
+
+
+# returns entered gateway ip
+def inputGateway(gateway):
+    gateway_saved = gateway
+    gateway = input('Enter gateway ip address [' + gateway + ']: ')
+    return gateway or gateway_saved
+
+
+# returns entered hostname
+def inputHostname(hostname):
+    hostname_saved = hostname
+    hostname = input('Enter hostname [' + str(hostname) + ']: ')
+    return hostname or hostname_saved
+
+
+# returns entered domainname
+def inputdomainname(domainname):
+    domainname_saved = domainname
+    domainname = input('Enter domainname [' + str(domainname) + ']: ')
+    return domainname or domainname_saved
+
+
+# returns entered pvdevice
+def inputPvdevice(pvdevice):
+    pvdevice_saved = pvdevice
+    pvdevice = input('Enter physical device to use for LVM [' + str(pvdevice) + ']: ')
+    return pvdevice or pvdevice_saved
+
+
+# return entered lvm volume definitions
+def inputLvmvols(lvmvols):
+    lvmvols_saved = lvmvols
+    lvmvols = input('Enter lvm volumes definition [' + str(lvmvols) + ']: ')
+    return lvmvols or lvmvols_saved
+
+
+# returns entered swapsize
+def inputSwapsize(swapsize):
+    swapsize_saved = swapsize
+    swapsize = input('Enter swap size in GiB [' + str(swapsize) + ']: ')
+    return swapsize or swapsize_saved
 
 
 # test valid hostname
@@ -257,6 +322,22 @@ def isValidDomainname(domainname):
             if not isValidHostname(label):
                 return False
         return True
+    except:
+        return False
+
+
+# test if ip matches network
+def ipMatchNet(ip, network, bitmask):
+    if not isValidHostIpv4(ip):
+        return False
+    try:
+        ipnet = ip + '/' + bitmask
+        n = IP(ipnet, make_net=True)
+        network_ip = IP(n).strNormal(0)
+        if network == network_ip:
+            return True
+        else:
+            return False
     except:
         return False
 
@@ -288,145 +369,6 @@ def getIssue():
         return 'xenial'
 
 
-# profile setup
-def do_profile(profile):
-    print('## Profile')
-    defaultprof = profile
-    if not unattended:
-        while True:
-            profile = input(
-                'Enter host profile ' + str(profile_list).replace("'", "") + ' [' + defaultprof + ']: ')
-            profile = profile or defaultprof
-            if (profile in profile_list) or profile == '':
-                break
-            else:
-                print("Invalid entry!")
-    if profile == 'server':
-        ipnr = '1'
-        pkgs = 'linuxmuster-base7 ' + srvpkgs
-    else:
-        ipnr = '21'
-        pkgs = ''
-    pkgs = pkgs + ' ' + bionicpkgs
-    return ipnr, pkgs
-
-
-# network setup
-def do_network(iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broadcast, firewallip, gateway, hostname, domainname, unattended, setup_mode):
-    # interface
-    print('## Network')
-    if iface != '' and not iface in iface_list:
-        iface = ''
-    if iface == '':
-        iface = iface_default
-    if (unattended and iface == '') or not unattended:
-        while True:
-            iface = input('Enter network interface to use ' + str(iface_list) + ': ')
-            iface = iface or iface_default
-            if iface in iface_list:
-                break
-            print("Invalid entry!")
-    # ip address & netmask
-    if setup_mode == 'babo':
-        ipnet = ipnet_babo + ipnr + '/' + bitmask_babo
-    elif setup_mode == 'default' or ipnet == '':
-        ipnet = ipnet_default + ipnr + '/' + bitmask_default
-    # correct ip address
-    if '.0/' in ipnet and ipnr != '':
-        ipnet = ipnet.replace('.0/', '.' + ipnr + '/')
-    # if ip is still a network address
-    if '.0/' in ipnet:
-        ipnet = ''
-        defaultip = ipnet_default + '1/' + bitmask_default
-    else:
-        defaultip = ipnet
-    if (unattended and ipnet == '') or not unattended:
-        while True:
-            ipnet = input(
-                'Enter ip address with net or bitmask [' + defaultip + ']: ')
-            ipnet = ipnet or defaultip
-            try:
-                n = IP(ipnet, make_net=True)
-                break
-            except ValueError:
-                print("Invalid entry!")
-    else:
-        n = IP(ipnet, make_net=True)
-    try:
-        hostip = ipnet.split('/')[0]
-    except:
-        print('Invalid network: ' + ipnet)
-        sys.exit(1)
-    network = IP(n).strNormal(0)
-    bitmask = IP(n).strNormal(1).split('/')[1]
-    netmask = IP(n).strNormal(2).split('/')[1]
-    broadcast = IP(n).strNormal(3).split('-')[1]
-    o1, o2, o3, o4 = hostip.split('.')
-    # firewall ip
-    if firewallip == '':
-        firewallip = o1 + '.' + o2 + '.' + o3 + '.254'
-    if unattended:
-        if not isValidHostIpv4(firewallip):
-            print('Invalid firewall ip: ' + firewallip)
-            sys.exit(1)
-    else:
-        defaultip = firewallip
-        while True:
-            firewallip = input(
-                'Enter firewall ip address [' + firewallip + ']: ')
-            firewallip = firewallip or defaultip
-            if isValidHostIpv4(firewallip):
-                break
-            else:
-                print("Invalid entry!")
-    # gateway ip
-    if gateway == '':
-        gateway = firewallip
-    if not unattended:
-        defaultip = gateway
-        while True:
-            gateway = input('Enter gateway ip address [' + gateway + ']: ')
-            gateway = gateway or defaultip
-            if isValidHostIpv4(gateway):
-                break
-            else:
-                print("Invalid entry!")
-    # hostname
-    if not isValidHostname(hostname):
-        hostname = ''
-    if (unattended and hostname == '') or not unattended:
-        if hostname == '':
-            defaultname = 'ubuntu'
-        else:
-            defaultname = hostname
-        while True:
-            hostname = input('Enter hostname [' + defaultname + ']: ')
-            hostname = hostname or defaultname
-            if isValidHostname(hostname):
-                break
-            else:
-                print("Invalid entry!")
-    # domainname
-    if domainname == '':
-        defaultdomain = 'linuxmuster.lan'
-    else:
-        defaultdomain = domainname
-    if unattended == True:
-        if not isValidDomainname(domainname):
-            print('Invalid domainname: ' + domainname)
-            sys.exit(1)
-        domainname = defaultdomain
-    else:
-        while True:
-            domainname = input('Enter domainname [' + defaultdomain + ']: ')
-            domainname = domainname or defaultdomain
-            if isValidDomainname(domainname):
-                break
-            else:
-                print("Invalid entry!")
-    return iface, hostname, domainname, hostip, bitmask, netmask, network, broadcast, firewallip, gateway
-
-
 # remove unnecessary stuff
 def do_cleaning():
     print('## Remove unnecessary stuff')
@@ -451,11 +393,13 @@ def getVolmount(volname):
 
 # create lvm volumes array
 def do_lvmvols_array(lvmvols, lvmmand):
+    if lvmvols is None:
+        return None
     # test if all mandatory volumes are present
     for volume in lvmmand:
         if volume not in lvmvols:
             print('Volume ' + volume + ' is not defined!')
-            usage(1)
+            return None
     # create array
     lvmvols_array = []
     try:
@@ -466,15 +410,15 @@ def do_lvmvols_array(lvmvols, lvmmand):
             volmount = getVolmount(volname)
             # test if volname is valid
             volvalid = re.match('^[\w-]+$', volname) is not None
-            if not volvalid or volmount == None:
+            if not volvalid or volmount is None:
                 print(volname + ' is no valid volume name.')
-                usage(1)
+                return None
             # test size parameter
             try:
                 int(volsize.split('%', 1)[0])
             except Exception as error:
                 print(volsize + ' is no valid volume size.')
-                usage(1)
+                return None
             volume_array.append(volmount)
             lvmvols_array.append(volume_array)
     except Exception as error:
@@ -483,44 +427,19 @@ def do_lvmvols_array(lvmvols, lvmmand):
     return lvmvols_array
 
 # lvm
-def do_lvm(pvdevice, vgname, lvmvols, lvmmand, quotamntopts):
+def do_lvm():
     print('## LVM')
-    # if volume group exists do nothing
-    vgdisplay = os.popen('vgdisplay').read()
-    if ' ' + vgname + '\n' in vgdisplay:
-        pvdevice = os.popen("pvdisplay | grep 'PV Name' | awk '{ print $3 }'").read().replace('\n', '')
-        print('# Volume group ' + vgname + ' with device ' + pvdevice + ' exists already!')
-        return pvdevice
-    # ask for pvdevice and lvmvols
-    if not unattended:
-        # save values
-        pvdevice_saved = pvdevice
-        lvmvols_saved = lvmvols
-        while True:
-            pvdevice = input(
-                'Enter physical device to use for LVM [' + pvdevice + ']: ')
-            pvdevice = pvdevice or pvdevice_saved
-            if pvdevice == '':
-                # return if no pvdevice is entered
-                return None
-            elif pathlib.Path(pvdevice).is_block_device():
-                lvmvols = input(
-                    'Enter lvm volumes definition [' + lvmvols + ']: ')
-                lvmvols = lvmvols or lvmvols_saved
-                if lvmvols == '':
-                    # return if no lvm volume definition is entered
-                    return None
-                lvmvols_array = do_lvmvols_array(lvmvols, lvmmand)
-                if lvmvols_array is not None:
-                    break
-            print("Invalid entry!")
-    rc, fstab = readTextfile('/etc/fstab')
-    fstab = fstab + '\n'
+    # create lvm
     print('# Creating physical volume ' + pvdevice + '.')
     if subprocess.call('pvcreate ' + pvdevice, shell=True) != 0:
+        print('Failed!')
         sys.exit(1)
+    # read fstab
+    rc, fstab = readTextfile('/etc/fstab')
+    fstab = fstab + '\n'
     print('# Creating volume group ' + vgname + '.')
     if subprocess.call('vgcreate ' + vgname + ' ' + pvdevice, shell=True) != 0:
+        print('Failed!')
         sys.exit(1)
     var_on_lvm = False
     for item in lvmvols_array:
@@ -561,11 +480,10 @@ def do_lvm(pvdevice, vgname, lvmvols, lvmmand, quotamntopts):
             sys.exit(1)
     if subprocess.call('mount -a', shell=True) != 0:
         sys.exit(1)
-    return pvdevice
 
 
 # set quota mount options to fstab if no lvm is defined
-def do_fstab_root(quotamntopts):
+def do_fstab_root():
     mntopts = quotamntopts + ',errors=remount-ro'
     config = FSTabConfig(path='/etc/fstab')
     config.load()
@@ -676,18 +594,36 @@ def do_sslcert(profile, domainname):
         + csrfile + ' -signkey ' + keyfile + ' -out ' + certfile, shell=True)
 
 
-# host specific software if internet connection is available
-def do_updates(pkgs):
+# updates if internet connection is available
+def do_updates():
     if not internet():
         print('# No internet connection!')
         sys.exit(1)
-    print('## Installing updates and host specific software')
-    subprocess.call('apt-get update', shell=True)
-    subprocess.call('DEBIAN_FRONTEND=noninteractive apt-get -y dist-upgrade', shell=True)
-    subprocess.call('DEBIAN_FRONTEND=noninteractive apt-get -y --allow-unauthenticated install ' + pkgs, shell=True)
-    subprocess.call('apt-get clean && apt-get -y autoremove', shell=True)
-    updates = True
-    return updates
+    print('## Installing updates')
+    subprocess.call('DEBIAN_FRONTEND=noninteractive apt-get update', shell=True)
+    res = subprocess.call('DEBIAN_FRONTEND=noninteractive apt-get -q=2 dist-upgrade', shell=True)
+    subprocess.call('apt-get clean && apt-get -q=2 autoremove', shell=True)
+    if res != 0:
+        print('Updates failed!')
+        sys.exit(res)
+
+
+# install a space separated list of package names
+def do_install(pkgs):
+    if pkgs is None:
+        return
+    print('## Installing software')
+    subprocess.call('DEBIAN_FRONTEND=noninteractive apt-get -q=2 install ' + pkgs, shell=True)
+    subprocess.call('apt-get clean', shell=True)
+    # check if essential pkgs are installed correctly
+    for pkg in pkgs.split():
+        print('Checking ' + pkg + ' ... ', end = '')
+        res = subprocess.call('dpkg -l | grep ^"ii  ' + pkg + '"', shell=True)
+        if res != 0:
+            print('Failed!')
+            sys.exit(1)
+        else:
+            print('OK.')
 
 
 # merge inifiles
@@ -715,7 +651,7 @@ def mergeInis():
 
 
 # print setup values
-def print_values(profile, hostname, domainname, hostip, netmask, firewallip, iface, swapsize, pvdevice):
+def print_values(profile, hostname, domainname, hostip, netmask, firewallip, iface, swapsize, pvdevice, vg_exists):
     print('\n## The system has been prepared with the following values:')
     print('# Profile   : ' + profile)
     print('# Hostname  : ' + hostname)
@@ -728,7 +664,10 @@ def print_values(profile, hostname, domainname, hostip, netmask, firewallip, ifa
     print('# Swapsize  : ' + swapsize + 'G')
     if pvdevice is not None:
         print('# LVM device: ' + pvdevice)
-        print('# LVM vlms  : ' + lvmvols)
+        if vg_exists:
+            print('  Using already existing device.')
+        else:
+            print('# LVM vlms  : ' + lvmvols)
 
 ## functions end
 
@@ -748,18 +687,18 @@ except getopt.GetoptError as err:
     usage(2)
 
 # read saved profile from previous run
-inifile = ''
+inifile = None
 if os.path.isfile(prepini):
     inifile = prepini
 elif os.path.isfile(setupini):
     inifile = setupini
-if inifile != '':
+if inifile is not None:
     print('## Reading profile from ' + inifile + ':')
     prep = configparser.ConfigParser(inline_comment_prefixes=('#', ';'))
     prep.read(inifile)
     try:
         profile_ini = prep.get('setup', 'profile')
-        if profile_ini != '':
+        if profile_ini is not None:
             profile = profile_ini
             print('# saved profile: ' + profile_ini)
     except:
@@ -812,10 +751,8 @@ for o, a in opts:
         rootpw = a
     elif o in ("-n", "--ipnet"):
         ipnet = a
-        # ipset = True
     elif o in ("-f", "--firewall"):
         firewallip = a
-        fwset = True
     elif o in ("-g", "--gateway"):
         gateway = a
     elif o in ("-h", "--help"):
@@ -832,96 +769,208 @@ else:
         print("## Don't do this on an already configured system!")
         sys.exit(1)
 
-# test values
-if setup_mode != '':
-    if profile == '' and profile_ini != '':
+# check mandatory values
+if setup_mode is not None:
+    if profile is None and profile_ini is not None:
         profile = profile_ini
-if not profile in profile_list or profile == '':
+if not profile in profile_list or profile is None:
     print('Invalid profile!')
     usage(1)
 if profile != 'server':
-    pvdevice = ''
+    pvdevice = None
     hostname = profile
 else:
-    if hostname == '':
+    if hostname is None:
         hostname = 'server'
-if ipnet == '' and profile == '':
+if profile is None:
     usage(1)
-if pvdevice != '' and initial == False:
-    print('LVM setup works only with -i!')
-    usage(1)
-if setup == False and initial == False:
+if profile == 'server':
+    ipnr = '1'
+else:
+    ipnr = '21'
+if setup is False and initial is False:
     print('You have to provide either -i or -s!')
     usage(1)
 if setup == True and initial == True:
     print("-i and -s don't work together!")
     usage(1)
-if setup == False and profile != 'ubuntu' and createcert == True:
+if setup is False and profile != 'ubuntu' and createcert == True:
     print("-c can only be used together with -s and ubuntu profile!")
     usage(1)
-if setup == False and nokeys == True:
+if setup is False and nokeys == True:
     print("-j can only be used in setup mode!")
     usage(1)
-if force == False and nokeys == True:
+if force is False and nokeys == True:
     print("-j can only be used together with -x!")
     usage(1)
-if setup == False and nopw == True:
+if setup is False and nopw == True:
     print("-k can only be used in setup mode!")
     usage(1)
-if force == False and nopw == True:
+if force is False and nopw == True:
     print("-k can only be used together with -x!")
     usage(1)
-# lvmvols
-if lvmvols == None:
-    lvmvols = lvmvols_default
-# pvdevice
-if pvdevice != '':
-    if not pathlib.Path(pvdevice).is_block_device():
-        print(f'# {pvdevice} is not a block device!')
-        sys.exit(1)
-# swapsize
-if not str.isdigit(swapsize):
+if pvdevice is not None and not initial:
+    print('LVM setup works only with -i!')
     usage(1)
-# override ini values if ipnet was set on cli
-# if ipset:
-#     if not fwset:
-#         firewallip = ''
-# do not set in interactive mode
-if unattended == False:
+if lvmvols is None:
+    lvmvols = lvmvols_default
+if not unattended:
+    # do not set in interactive mode
     reboot = False
 
-# get network interfaces
+
+# main
+print('## Profile: ' + profile)
+
+
+# get & check network values -- begin
+print('## Network')
+
+# get network interface
 iface_list, iface_default = getDefaultIface()
 if len(iface_list) == 0:
     print('# No network interfaces found!')
     sys.exit(1)
+# input interface if not unattended
+iface = inputIface(iface, iface_default, iface_list) if not unattended else iface_default
+
+# set default ip address & netmask
+if setup_mode == 'babo':
+    ipnet = ipnet_babo + ipnr + '/' + bitmask_babo
+elif setup_mode == 'default' or ipnet is None:
+    ipnet = ipnet_default + ipnr + '/' + bitmask_default
+
+# host ip/net
+ipnet_saved = ipnet
+while True:
+    ipnet = inputIpnet(ipnet_saved) if not unattended else ipnet_saved
+    try:
+        n = IP(ipnet, make_net=True)
+        hostip = ipnet.split('/')[0]
+        network = IP(n).strNormal(0)
+        bitmask = IP(n).strNormal(1).split('/')[1]
+        netmask = IP(n).strNormal(2).split('/')[1]
+        broadcast = IP(n).strNormal(3).split('-')[1]
+        o1, o2, o3, o4 = hostip.split('.')
+        break
+    except:
+        print(f'# {ipnet} is not valid!')
+        sys.exit(1) if unattended else print('Try again.')
+
+# firewall ip
+if firewallip is None:
+    firewallip = o1 + '.' + o2 + '.' + o3 + '.254'
+firewallip_saved = firewallip
+while True:
+    firewallip = inputFirewallip(firewallip_saved) if not unattended else firewallip_saved
+    if ipMatchNet(firewallip, network, bitmask):
+        break
+    else:
+        print(f'# {firewallip} is not valid!')
+        sys.exit(1) if unattended else print('Try again.')
+
+# gateway ip
+if gateway is None:
+    gateway = firewallip
+gateway_saved = gateway
+while True:
+    gateway = inputGateway(gateway_saved) if not unattended else gateway_saved
+    if ipMatchNet(gateway, network, bitmask):
+        break
+    else:
+        print(f'# {gateway} is not valid!')
+        sys.exit(1) if unattended else print('Try again.')
+ 
+# hostname
+hostname_saved = hostname
+while True:
+    hostname = inputHostname(hostname_saved) if not unattended else hostname_saved
+    if isValidHostname(hostname):
+        break
+    else:
+        print(f'# {hostname} is not valid!')
+        sys.exit(1) if unattended else print('Try again.')
+
+# domainname
+domainname_saved = domainname
+while True:
+    domainname = inputHostname(domainname_saved) if not unattended else domainname_saved
+    if isValidDomainname(domainname):
+        break
+    else:
+        print(f'# {domainname} is not valid!')
+        sys.exit(1) if unattended else print('Try again.')
+# get & check network values -- end
 
 
-# main
+# get & check lvm values -- begin
+if initial:
+    print('## LVM')
+    pvdevice_saved = pvdevice
+    while True:
+        pvdevice = inputPvdevice(pvdevice_saved) if not unattended else pvdevice_saved
+        if pvdevice is not None:
+            if pathlib.Path(pvdevice).is_block_device():
+                break
+            else:
+                print(f'# {pvdevice} is not a block device!')
+                sys.exit(1) if unattended else print('Try again.')
+        else:
+            break
+    # get & check lvm volume defs
+    if pvdevice is not None:
+        # check if volume group exists already
+        res = subprocess.call('LANG=C vgdisplay | grep "VG Name" | grep -w ' + vgname, shell = True)
+        if res == 0:
+            print('# Volume group ' + vgname + ' exists already!')
+            vg_exists = True
+        else:
+            # process lvm volumes
+            lvmvols_saved = lvmvols
+            while True:
+                lvmvols = inputLvmvols(lvmvols_saved) if not unattended else lvmvols_saved
+                lvmvols_array = do_lvmvols_array(lvmvols, lvmmand)
+                if lvmvols_array is None:
+                    print(f'# There is something wrong with your volume definition: {lvmvols}!')
+                    sys.exit(1) if unattended else print('Try again.')
+                else:
+                    break
+# get & check lvm values -- end
+
+
+# get & check swapsize
+print('## Swap')
+swapsize_saved = swapsize
+while True:
+    swapsize = inputSwapsize(swapsize_saved) if not unattended else swapsize_saved
+    if str.isdigit(swapsize):
+        break
+    else:
+        print(f'# Swapsize is not an integer!')
+        sys.exit(1) if unattended else print('Try again.')
+
+
+# initial prepare
 if initial:
     serverip = ''
     rootpw = rootpw_default
-    ipnr, pkgs = do_profile(profile)
-    iface, hostname, domainname, hostip, bitmask, netmask, network, broadcast, firewallip, gateway = do_network(
-        iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broadcast, firewallip, gateway, hostname,
-        domainname, unattended, setup_mode)
+    do_updates()
     do_cleaning()
+    # check lvm data
     if profile == 'server':
-        pvdevice = do_lvm(pvdevice, vgname, lvmvols, lvmmand, quotamntopts)
         if pvdevice is None:
-            do_fstab_root(quotamntopts)
+            do_fstab_root()
+        elif not vg_exists:
+            do_lvm()
         do_quota()
-    updates = do_updates(pkgs)
+        do_install(srvpkgs)
     # activate serial console
     subprocess.call('systemctl enable serial-getty@ttyS0.service', shell=True)
     subprocess.call('systemctl start serial-getty@ttyS0.service', shell=True)
     do_password(rootpw)
     dnssearch = ''
+# setup mode
 elif setup:
-    ipnr, pkgs = do_profile(profile)
-    iface, hostname, domainname, hostip, bitmask, netmask, network, broadcast, firewallip, gateway = do_network(
-        iface, iface_default, ipnr, ipnet, hostip, bitmask, netmask, broadcast, firewallip, gateway, hostname,
-        domainname, unattended, setup_mode)
     do_swap(swapsize)
     # write hostname before keys and certificates were created
     writeTextfile('/etc/hostname', hostname + '.' + domainname, 'w')
@@ -932,6 +981,7 @@ elif setup:
     if not nopw:
         do_password(rootpw)
     dnssearch = 'search: [' + domainname + ']'
+
 
 # write configs, common and issue specific
 print('## Writing configuration')
@@ -988,7 +1038,7 @@ content = hostname + '.' + domainname
 writeTextfile(outfile, content, 'w')
 
 # print values
-print_values(profile, hostname, domainname, hostip, netmask, firewallip, iface, swapsize, pvdevice)
+print_values(profile, hostname, domainname, hostip, netmask, firewallip, iface, swapsize, pvdevice, vg_exists)
 
 print('\n### Finished - a reboot is necessary!')
 
