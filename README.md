@@ -4,28 +4,43 @@ Scripts and configuration templates to initially setup a virtual appliance for l
 
 Skripte und Konfigurationsvorlagen für die Vorbereitung einer virtuellen Appliance für linuxmuster.net 7.1/7.2 auf Basis von Ubuntu Server 18.04/22.04.
 
-## Das Skript
+## Das Skript lmn-appliance
 
 [lmn-appliance](https://raw.githubusercontent.com/linuxmuster/linuxmuster-prepare/master/lmn-appliance) bereitet die Appliance für das Rollout vor:
 - Es bringt das Betriebssystem auf den aktuellen Stand,
+- richtet das linuxmuster.net-Paket-Repo ein,
 - installiert das Paket **linuxmuster-prepare** und
-- startet dann das Vorbereitungsskript _linuxmuster-prepare_,
-- das die für das jeweilige Appliance-Profil benötigten Pakete installiert,
-- das Netzwerk konfiguriert,
-- das root-Passwort auf _Muster!_ setzt und
-- im Falle des Serverprofils LVM einrichtet.
+- startet dann das Vorbereitungsskript _lmn-prepare_,
+  - das die für das jeweilige Appliance-Profil benötigten Pakete installiert,
+  - das Netzwerk konfiguriert,
+  - das root-Passwort auf _Muster!_ setzt und
+  - im Falle des Serverprofils optional LVM einrichtet.
 
-### Optionen
+Installation:
+- Skript herunterladen:
+  `wget https://raw.githubusercontent.com/linuxmuster/linuxmuster-prepare/master/lmn-appliance`
+- Ausführbar machen:
+  `chmod +x lmn-appliance`
+- Skript starten:
+  `./lmn-appliance <Optionen>`
+
+Wird `lmn-appliance` ohne Optionen aufgerufen, richtet es nur das linuxmuster.net-Paket-Repo ein und aktualisiert das System. Die Vorbereitung der Appliance muss in dem Fall anschließend mit `lmn-prepare` gemacht werden (Optionen siehe `lmn-prepare -h`).
+
+### Optionen von lmn-appliance
+
 Parameter | Wert | Bedeutung
 ----------|------|----------
 `-t, --hostname=` | `<hostname>` | Hostname der Appliance, falls weggelassen wird der Profilname verwendet.
 `-n, --ipnet=` | `<ip/bitmask>` | IP-Adresse und Bitmaske des Hosts (Standardwert ist 10.0.0.[1,2,3]/16, abhängig vom Profil).
 `-p, --profile=` | `<server|ubuntu>` | Appliance-Profil, wurde -n nicht angegeben, wird die IP-Adresse automatisch gesetzt: server 10.0.0.1, opsi 10.0.0.2, docker 10.0.0.3. Bei "ubuntu" muss mit -n eine Adresse/Bitmaske angegeben werden.
+`-l, --pvdevice=` | `<device>` | Pfad zum LVM-Device (nur bei Serverprofil), kann eine Partition oder eine komplette Disk sein (optional). Wird kein LVM-Device angegeben, gilt die vorhandene Partitionierung.
 `-v, --volumes=` | `<name:size,name:size,...>` | Liste von LVM-Volumes mit Namen und Größe. Beispiel: `linbo:50%FREE,global:10,default-school:100%FREE` bedeutet "linbo" bekommt 50% des Volumes, "global" bekommt 10G und "default-school" den gesamten Rest. Es müssen mindestens "linbo", "global" und "default-school" angegeben werden, "var" kann weggelassen werden. "global" und "default-school" werden quotiert. Standardwert ist: "var:10,linbo:40,global:10,default-school:100%FREE".
-`-l, --pvdevice=` | `<device>` | Pfad zum LVM-Device (nur bei Serverprofil), kann eine Partition oder eine komplette Disk sein.
-`-f, --firewall=` | `<ip>` | Firewall-/Gateway-/Nameserver-Adresse (Standard x.x.x.254).
+`-w, --swapsize=` | `<#>` | Größe der Swapdatei in GiB (Standard 2).
+`-f, --firewall=` | `<ip>` | Firewall-/Nameserver-Adresse (Standard x.x.x.254).
+`-g, --gateway=` | `<ip>` | Gateway-Adresse (Standard ist Firewall-IP).
 `-d, --domain=` | `<domain>` | Domänenname (Standard: linuxmuster.lan).
 `-u, --unattended` | - | Keine Abfragen, verwende Standardwerte.
+`-b, --reboot` | - | Abschließender Neustart (nur zusammen mit _unattended_).
 `-h, --help` | - | Hilfe anzeigen.
 
 ### Profilvorgaben
