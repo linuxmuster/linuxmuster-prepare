@@ -84,7 +84,7 @@ profile_list = ['server', 'ubuntu']
 for o, a in opts:
     if o in ("-u", "--unattended"):
         unattended = ' -u'
-    if o in ("-b", "--reboot"):
+    elif o in ("-b", "--reboot"):
         reboot = ' -b'
     elif o in ("-p", "--profile"):
         profile = a
