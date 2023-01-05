@@ -17,7 +17,7 @@ Skripte und Konfigurationsvorlagen für die Vorbereitung einer virtuellen Applia
   - im Falle des Serverprofils optional LVM einrichtet.
 
 Installation:
-- Skript herunterladen:
+- Skript herunterladen:  
   `wget https://raw.githubusercontent.com/linuxmuster/linuxmuster-prepare/master/lmn-appliance`
 - Ausführbar machen:
   `chmod +x lmn-appliance`
