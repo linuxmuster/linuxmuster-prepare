@@ -32,7 +32,7 @@ Parameter | Wert | Bedeutung
 ----------|------|----------
 `-t, --hostname=` | `<hostname>` | Hostname der Appliance, falls weggelassen wird der Profilname verwendet.
 `-n, --ipnet=` | `<ip/bitmask>` | IP-Adresse und Bitmaske des Hosts (Standardwert ist 10.0.0.[1,2,3]/16, abhängig vom Profil).
-`-p, --profile=` | `<server|ubuntu>` | Appliance-Profil, wurde -n nicht angegeben, wird die IP-Adresse automatisch gesetzt: server 10.0.0.1, opsi 10.0.0.2, docker 10.0.0.3. Bei "ubuntu" muss mit -n eine Adresse/Bitmaske angegeben werden.
+`-p, --profile=` | `<server\|ubuntu>` | Appliance-Profil, wurde -n nicht angegeben, wird die IP-Adresse automatisch gesetzt: server 10.0.0.1, opsi 10.0.0.2, docker 10.0.0.3. Bei "ubuntu" muss mit -n eine Adresse/Bitmaske angegeben werden.
 `-l, --pvdevice=` | `<device>` | Pfad zum LVM-Device (nur bei Serverprofil), kann eine Partition oder eine komplette Disk sein (optional). Wird kein LVM-Device angegeben, gilt die vorhandene Partitionierung.
 `-v, --volumes=` | `<name:size,name:size,...>` | Liste von LVM-Volumes mit Namen und Größe. Beispiel: `linbo:50%FREE,global:10,default-school:100%FREE` bedeutet "linbo" bekommt 50% des Volumes, "global" bekommt 10G und "default-school" den gesamten Rest. Es müssen mindestens "linbo", "global" und "default-school" angegeben werden, "var" kann weggelassen werden. "global" und "default-school" werden quotiert. Standardwert ist: "var:10,linbo:40,global:10,default-school:100%FREE".
 `-w, --swapsize=` | `<#>` | Größe der Swapdatei in GiB (Standard 2).
