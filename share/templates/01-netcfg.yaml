@@ -11,10 +11,12 @@ network:
   version: 2
   ethernets:
     @@iface@@:
-      dhcp4: no
-      dhcp6: no
+      dhcp4: false
+      dhcp6: false
       addresses: [@@hostip@@/@@bitmask@@]
-      gateway4: @@gateway@@
+      routes: 
+       - to: default
+         via: @@gateway@@
       nameservers:
         addresses: [@@serverip@@,@@firewallip@@]
         @@dnssearch@@
