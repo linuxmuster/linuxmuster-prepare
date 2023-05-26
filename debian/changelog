@@ -1,3 +1,9 @@
+linuxmuster-prepare (7.2.1-0) lmn71; urgency=low
+
+  * Merge pull request #25 from linuxmuster/remove-gateway4 (081d11f).
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Fri, 26 May 2023 13:22:00 +0200
+
 linuxmuster-prepare (7.2.0-0) lmn71; urgency=low
 
   * Fix #24: lvm default value for volume not set in action (d0d36bd).
