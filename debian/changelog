@@ -1,8 +1,8 @@
-linuxmuster-prepare (7.2.2-0) lmn72; urgency=low
+linuxmuster-prepare (7.2.1-1) lmn71; urgency=low
 
-  * lmn72 rebuild.
+  * Revert pull request #25 from linuxmuster/remove-gateway4 (3c75dda).
 
- -- Thomas Schmitt <thomas@linuxmuster.net>  Wed, 19 Jul 2023 12:56:00 +0200
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Tue, 25 Jul 2023 20:51:00 +0200
 
 linuxmuster-prepare (7.2.1-0) lmn71; urgency=low
 
