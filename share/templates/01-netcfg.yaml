@@ -1,7 +1,7 @@
 # /etc/netplan/01-netcfg.yaml
 #
 # thomas@linuxmuster.net
-# 20180612
+# 20230725
 #
 # This file describes the network interfaces available on your system
 # For more information, see netplan(5).

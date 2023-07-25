@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # thomas@linuxmuster.net
-# 20220620
+# 20230725
 #
 # see: dh_installdeb(1)
 
@@ -25,6 +25,33 @@ case "$1" in
 
     # install python3 reconfigure
     /usr/bin/python3 -m pip install reconfigure
+
+    # fix netplan default route
+    yml="01-netcfg.yaml"
+    tpl="/usr/share/linuxmuster/prepare/templates/$yml"
+    cfg="/etc/netplan/$yml"
+    if [ -e "$cfg" -a -s /var/lib/linuxmuster/setup.ini ]; then
+      version="20230725"
+      if ! grep -q "# $version" "$cfg"; then
+        echo "Fixing default route in $cfg."
+        cp "$cfg" "$cfg.bak"
+        source /usr/share/linuxmuster/defaults.sh
+        iface="$(ip route show | grep ^"$network" | awk '{print $3}')"
+        dnssearch="search: [ $domainname ]"
+        sed -e "s|@@iface@@|$iface|
+                s|@@hostip@@|$hostip|
+                s|@@bitmask@@|$bitmask|
+                s|@@gateway@@|$gateway|
+                s|@@serverip@@|$serverip|
+                s|@@firewallip@@|$firewallip|
+                s|@@dnssearch@@|$dnssearch|" "$tpl" > "$cfg"
+        if ! netplan apply; then
+          echo "Rolling back netplan cfg."
+          cp "$cfg.bak" "$cfg"
+          netplan apply
+        fi
+      fi
+    fi
 
   ;;
 
