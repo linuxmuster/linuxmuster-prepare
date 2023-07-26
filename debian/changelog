@@ -1,3 +1,9 @@
+linuxmuster-prepare (7.2.4-0) lmn72; urgency=low
+
+  * Fix iface determination in postinst (cb5383a).
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Wed, 26 Jul 2023 09:54:00 +0200
+
 linuxmuster-prepare (7.2.3-0) lmn72; urgency=low
 
   * Fix default route in netplan cfg (0e7eac5).
