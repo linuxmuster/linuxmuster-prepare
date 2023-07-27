@@ -1,3 +1,9 @@
+linuxmuster-prepare (7.2.5-0) lmn72; urgency=low
+
+  * revert netplan fix (39af9bd).
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Thu, 27 Jul 2023 13:07:00 +0200
+
 linuxmuster-prepare (7.2.4-0) lmn72; urgency=low
 
   * Fix iface determination in postinst (cb5383a).
