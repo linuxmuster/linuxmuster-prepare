@@ -1,3 +1,9 @@
+linuxmuster-prepare (7.2.6-0) lmn72; urgency=low
+
+  * fix netplan configuration template (bccd580).
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Fri, 27 Jul 2023 19:01:00 +0200
+
 linuxmuster-prepare (7.2.5-0) lmn72; urgency=low
 
   * revert netplan fix (39af9bd).
