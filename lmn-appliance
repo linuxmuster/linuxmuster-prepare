@@ -2,7 +2,7 @@
 #
 # lmn-appliance
 # thomas@linuxmuster.net
-# 20230105
+# 20240515
 #
 
 import configparser
@@ -92,7 +92,7 @@ for o, a in opts:
         hostname = ' -t ' + a
     elif o in ("-v", "--volumes"):
         volumes = ' -v ' + a
-    elif o in ("-v", "--volumes"):
+    elif o in ("-w", "--swapsize"):
         swapsize = ' -w ' + a
     elif o in ("-l", "--pvdevice"):
         pvdevice = ' -l ' + a
