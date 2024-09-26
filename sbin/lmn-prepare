@@ -894,7 +894,7 @@ while True:
 # domainname
 domainname_saved = domainname
 while True:
-    domainname = inputHostname(domainname_saved) if not unattended else domainname_saved
+    domainname = inputdomainname(domainname_saved) if not unattended else domainname_saved
     if isValidDomainname(domainname):
         break
     else:
