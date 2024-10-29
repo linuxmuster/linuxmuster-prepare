@@ -2,7 +2,7 @@
 #
 # lmn-prepare
 # thomas@linuxmuster.net
-# 20230104
+# 20241029
 #
 
 import configparser
@@ -274,7 +274,7 @@ def inputHostname(hostname):
 
 
 # returns entered domainname
-def inputdomainname(domainname):
+def inputDomainname(domainname):
     domainname_saved = domainname
     domainname = input('Enter domainname [' + str(domainname) + ']: ')
     return domainname or domainname_saved
@@ -894,7 +894,7 @@ while True:
 # domainname
 domainname_saved = domainname
 while True:
-    domainname = inputHostname(domainname_saved) if not unattended else domainname_saved
+    domainname = inputDomainname(domainname_saved) if not unattended else domainname_saved
     if isValidDomainname(domainname):
         break
     else:

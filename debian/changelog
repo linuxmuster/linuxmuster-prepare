@@ -1,3 +1,9 @@
+linuxmuster-prepare (7.2.7-0) lmn72; urgency=low
+
+  * fix #27 (merged michaelkohls pr).
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Tue, 29 Jul 2024 10:23:00 +0100
+
 linuxmuster-prepare (7.2.6-0) lmn72; urgency=low
 
   * fix netplan configuration template (bccd580).
