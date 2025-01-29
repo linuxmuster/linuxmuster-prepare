@@ -1,3 +1,9 @@
+linuxmuster-prepare (7.3.0-0) lmn73; urgency=low
+
+  * implement ubuntu server 24.04 installation.
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Wed, 29 Jan 2025 15:44:05 +0100
+
 linuxmuster-prepare (7.2.7-0) lmn72; urgency=low
 
   * fix #27 (merged michaelkohls pr).
