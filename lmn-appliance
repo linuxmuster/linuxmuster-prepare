@@ -2,7 +2,7 @@
 #
 # lmn-appliance
 # thomas@linuxmuster.net
-# 20250129
+# 20250130
 #
 
 import configparser
@@ -176,7 +176,7 @@ urllib.request.urlretrieve(lmnkey_remote, lmnkey_local)
 
 writeTextfile(lmn_list, lmn72_deb + '\n', 'w')
 if version == '24.04':
-    writeTextfile(lmn_list, lmn72t_deb, 'a')
+    writeTextfile(lmn_list, lmn72t_deb + '\n', 'a')
     writeTextfile(lmn_list, lmn73_deb, 'a')
 
 
