@@ -2,7 +2,7 @@
 #
 # lmn-appliance
 # thomas@linuxmuster.net
-# 20250130
+# 20250315
 #
 
 import configparser
@@ -119,7 +119,6 @@ lmnkey_remote = 'https://deb.linuxmuster.net/pub.gpg'
 lmnkey_local = '/etc/apt/trusted.gpg.d/linuxmuster.net.gpg'
 lmn_list = '/etc/apt/sources.list.d/lmn.list'
 lmn72_deb = 'deb https://deb.linuxmuster.net/ lmn72 main'
-lmn72t_deb = 'deb https://deb.linuxmuster.net/ lmn72-testing main'
 lmn73_deb = 'deb https://deb.linuxmuster.net/ lmn73 main'
 pkgname = 'linuxmuster-prepare'
 
@@ -174,10 +173,11 @@ if version != '22.04' and version != '24.04':
 print('## install linuxmuster.net repos')
 urllib.request.urlretrieve(lmnkey_remote, lmnkey_local)
 
-writeTextfile(lmn_list, lmn72_deb + '\n', 'w')
+
 if version == '24.04':
-    writeTextfile(lmn_list, lmn72t_deb + '\n', 'a')
-    writeTextfile(lmn_list, lmn73_deb, 'a')
+    writeTextfile(lmn_list, lmn73_deb, 'w')
+else:
+    writeTextfile(lmn_list, lmn72_deb, 'w')
 
 
 # get updates
