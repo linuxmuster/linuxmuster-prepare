@@ -2,7 +2,7 @@
 #
 # lmn-prepare
 # thomas@linuxmuster.net
-# 20241029
+# 20250729
 #
 
 import configparser
@@ -629,7 +629,7 @@ def do_install(pkgs):
 # merge inifiles
 def mergeInis():
     print('## Merging inifiles:')
-    setup = configparser.ConfigParser(inline_comment_prefixes=('#', ';'))
+    setup = configparser.RawConfigParser(delimiters=('='))
     for item in [setupini, prepini]:
         # skip non existant file
         if not os.path.isfile(item):
@@ -694,7 +694,7 @@ elif os.path.isfile(setupini):
     inifile = setupini
 if inifile is not None:
     print('## Reading profile from ' + inifile + ':')
-    prep = configparser.ConfigParser(inline_comment_prefixes=('#', ';'))
+    prep = configparser.RawConfigParser(delimiters=('='))
     prep.read(inifile)
     try:
         profile_ini = prep.get('setup', 'profile')
