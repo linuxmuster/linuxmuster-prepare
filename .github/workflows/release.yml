@@ -26,7 +26,7 @@ jobs:
         run: mkdir package && cp ../linuxmuster-prepare_* ./package
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: deb-package
           path: package/*
@@ -38,8 +38,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
+        uses: actions/download-artifact@v4.1.7
           name: deb-package
 
       - name: Extract current changes
@@ -109,7 +108,7 @@ jobs:
         run: mkdir "package"
 
       - name: Download artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: deb-package
           path: "./package"
