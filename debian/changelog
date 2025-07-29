@@ -1,3 +1,9 @@
+linuxmuster-prepare (7.3.1-0) lmn73; urgency=low
+
+  * fix "#" in passwords (04c5094).
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Tue, 29 Jul 2025 22:10:41 +0200
+
 linuxmuster-prepare (7.3.0-0) lmn73; urgency=low
 
   * implement ubuntu server 24.04 installation.
