@@ -23,8 +23,11 @@ case "$1" in
 
   configure)
 
-    # install python3 reconfigure
-    /usr/bin/python3 -m pip install reconfigure --break-system-packages
+    # reconfigure is provided by the python3-reconfigure package
+    if ! python3 -c 'import reconfigure' >/dev/null 2>&1; then
+      echo 'ERROR: python3-reconfigure is missing' >&2
+      exit 1
+    fi
 
   ;;
 
