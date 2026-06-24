@@ -2,7 +2,7 @@
 #
 # lmn-appliance
 # thomas@linuxmuster.net
-# 20251118
+# 20260618
 #
 
 import configparser
@@ -33,12 +33,6 @@ def usage(rc):
     print('                              values are "server" or "ubuntu".')
     print('                              Profile name is also used as hostname, except for')
     print('                              "server" if set with -t.')
-    print('-l, --pvdevice=<device>     : Initially sets up lvm on the given device (server')
-    print('                              profile only). <device> can be a partition or an')
-    print('                              entire disk.')
-    print('-v, --volumes=<volumelist>  : List of lvm volumes to create (to be used together')
-    print('                              with -l/--pvdevice). Syntax (size in GiB):')
-    print('                              <name>:<size>,<name>:<size>,...')
     print('-w, --swapsize=<size>       : Swapfile size in GB (default "2").')
     print('-f, --firewall=<firewallip> : Firewall/gateway ip (default *.254).')
     print('-g, --gateway=<ip>          : Gateway ip address (default is firewall ip).')
@@ -60,7 +54,7 @@ def usage(rc):
 # get cli args
 try:
     opts, args = getopt.getopt(sys.argv[1:], "bd:f:g:hl:n:p:t:uv:w:", [
-        "reboot", "domain=", "firewall=", "gateway=", "help", "volumes=", "swapsize=", "pvdevice=", "ipnet=", "profile=", "hostname=", "unattended"])
+        "reboot", "domain=", "firewall=", "gateway=", "help", "swapsize=", "ipnet=", "profile=", "hostname=", "unattended"])
 except getopt.GetoptError as err:
     # print help information and exit:
     print(err)  # will print something like "option -a not recognized"
@@ -90,12 +84,8 @@ for o, a in opts:
         profile = a
     elif o in ("-t", "--hostname"):
         hostname = ' -t ' + a
-    elif o in ("-v", "--volumes"):
-        volumes = ' -v ' + a
     elif o in ("-w", "--swapsize"):
         swapsize = ' -w ' + a
-    elif o in ("-l", "--pvdevice"):
-        pvdevice = ' -l ' + a
     elif o in ("-d", "--domain"):
         domainname = ' -d ' + a
     elif o in ("-n", "--ipnet"):
@@ -115,11 +105,14 @@ if profile != '' and profile not in profile_list:
     usage(1)
 
 # repo data
-lmnkey_remote = 'https://deb.linuxmuster.net/pub.gpg'
-lmnkey_local = '/etc/apt/trusted.gpg.d/linuxmuster.net.gpg'
-lmn_list = '/etc/apt/sources.list.d/lmn.list'
-lmn72_deb = 'deb https://deb.linuxmuster.net/ lmn72 main'
-lmn73_deb = 'deb https://deb.linuxmuster.net/ lmn73 main'
+lmn_url = 'https://deb.linuxmuster.net/'
+lmnkey_remote = lmn_url + 'pub.gpg'
+lmnkey_local = '/usr/share/keyrings/linuxmuster.net.gpg'
+lmn_list_pre = '/etc/apt/sources.list.d/lmn.'
+lmn74_def = 'Types: deb\nURIs: ' + lmn_url + '\nSuites: lmn74\nComponents: main\nSigned-By: ' + lmnkey_local
+lmn74_sources = lmn_list_pre + 'sources'
+lmn73_def = 'deb [arch=amd64 signed-by=' + lmnkey_local + '] ' + lmn_url + ' lmn73 main'
+lmn73_list = lmn_list_pre + 'list'
 pkgname = 'linuxmuster-prepare'
 
 
@@ -162,23 +155,26 @@ def os_release():
     return os_data['OS']['ID'], os_data['OS']['VERSION_ID']
 
 
-# install repos
+# check ubuntu version
 id, version = os_release()
 if id != 'ubuntu':
     print(id + ' is not the expected os.')
     sys.exit(1)
-if version != '22.04' and version != '24.04':
+if version != '26.04' and version != '24.04':
     print(version + ' is not the expected version.')
     sys.exit(1)
 print('## install linuxmuster.net repos')
+
+
+# install repo key
 urllib.request.urlretrieve(lmnkey_remote, lmnkey_local)
 
 
-if version == '24.04':
-    writeTextfile(lmn_list, lmn73_deb, 'w')
+# install repos
+if version == '26.04':
+    writeTextfile(lmn74_sources, lmn74_def, 'w')
 else:
-    writeTextfile(lmn_list, lmn72_deb, 'w')
-
+    writeTextfile(lmn73_list, lmn73_def, 'w')
 
 # get updates
 print('## install software updates')
@@ -197,4 +193,4 @@ if profile != '':
     print('## invoke lmn-prepare')
     profile = ' -p ' + profile
     subprocess.call('lmn-prepare -i' + unattended + reboot + profile
-        + hostname + domainname + firewallip + gateway + ipnet + volumes + pvdevice + swapsize, shell=True)
+        + hostname + domainname + firewallip + gateway + ipnet + swapsize, shell=True)

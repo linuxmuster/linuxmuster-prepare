@@ -7,7 +7,7 @@ Standards-Version: 4.7.3
 
 Package: linuxmuster-prepare
 Architecture: all
-Depends: python3, python3-reconfigure, net-tools, python3-ipy, python3-netifaces, quota, rsync, ssh, vim, bash-completion, netplan.io, lvm2
+Depends: locales, tzdata, python3, net-tools, python3-ipy, python3-netifaces, quota, rsync, ssh, vim, bash-completion, netplan.io, lvm2
 Description: linuxmuster.net pre setup configuration scripts
  A helper package for preparing Ubuntu systems for a
  linuxmuster.net server installation.

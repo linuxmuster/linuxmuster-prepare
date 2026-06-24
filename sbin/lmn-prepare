@@ -2,28 +2,30 @@
 #
 # lmn-prepare
 # thomas@linuxmuster.net
-# 20250729
+# 20260622
 #
 
+import argparse
 import configparser
 import datetime
-import getopt
 import getpass
 import netifaces
 import os
 import pathlib
 import pwd
 import re
-import reconfigure
 import socket
 import subprocess
 import sys
 
+from dataclasses import dataclass
+from shutil import copyfile
+from typing import Optional
+
 from IPy import IP
-from reconfigure.configs import FSTabConfig
 
 
-# global values
+# default values
 hostname = None
 hostip = None
 firewallip = None
@@ -31,8 +33,6 @@ gateway = None
 ipnet = None
 ipnet_default = '10.0.0.'
 bitmask_default = '16'
-ipnet_babo = '10.16.1.'
-bitmask_babo = '12'
 serverip = ''
 iface = None
 iface_default = None
@@ -50,13 +50,6 @@ profile_list = ['server', 'ubuntu']
 user_list = ['linuxmuster', 'linuxadmin', 'lmn', 'lmnadmin']
 profile = None
 profile_ini = None
-pvdevice = None
-vgname = 'vg_srv'
-vg_exists = False
-lvmmand = ['linbo', 'global', 'default-school']
-lvmvols = None
-lvmvols_default = 'var:10,linbo:40,global:10,default-school:100%FREE'
-quotamntopts = 'user_xattr,acl,usrjquota=aquota.user,grpjquota=aquota.group,jqfmt=vfsv0,barrier=1'
 unattended = False
 initial = False
 setup = False
@@ -73,9 +66,36 @@ templates = sharedir + '/templates'
 libdir = '/var/lib/linuxmuster'
 prepini = libdir + '/prepare.ini'
 setupini = libdir + '/setup.ini'
-purgepkgs = 'lxc lxc-utils lxcfs snapd'
+purgepkgs = 'cloud-guest-utils cloud-init cloud-init-base lxc snapd'
 srvpkgs = 'linuxmuster-base7 linuxmuster-linbo7 linuxmuster-webui7 linuxmuster-linbo-gui7 sophomorix-samba'
 swapfile = '/swap.img'
+
+
+@dataclass
+class PrepareConfig:
+    profile: Optional[str] = None
+    hostname: Optional[str] = None
+    ipnet: Optional[str] = None
+    firewallip: Optional[str] = None
+    gateway: Optional[str] = None
+    domainname: str = domainname
+    swapsize: str = swapsize
+    rootpw: str = rootpw_default
+    serverip: str = serverip
+    initial: bool = False
+    setup: bool = False
+    unattended: bool = False
+    force: bool = False
+    createcert: bool = False
+    nokeys: bool = False
+    nopw: bool = False
+    reboot: bool = False
+    setup_mode: Optional[str] = None
+
+
+def run_shell_command(cmd, shell=False, check=False, capture_output=False):
+    proc = subprocess.run(cmd, shell=shell, check=check, capture_output=capture_output, text=True)
+    return proc if capture_output else proc.returncode
 
 
 ## functions start
@@ -99,12 +119,6 @@ def usage(rc):
     print('                              "server" if set with -t.')
     print('-c, --createcert            : Create self signed server cert (to be used only')
     print('                              in setup mode and with ubuntu profile).')
-    print('-l, --pvdevice=<device>     : Initially sets up lvm on the given device (server')
-    print('                              profile only). <device> can be a partition or an')
-    print('                              entire disk.')
-    print('-v, --volumes=<volumelist>  : List of lvm volumes to create (to be used together')
-    print('                              with -l/--pvdevice). Syntax (size in GiB):')
-    print('                              <name>:<size>,<name>:<size>,...')
     print('-f, --firewall=<ip>         : Firewall ip address (default *.*.*.254).')
     print('-g, --gateway=<ip>          : Gateway ip address (default is firewall ip).')
     print('-d, --domain=<domainname>   : Domainname (default linuxmuster.lan).')
@@ -116,22 +130,93 @@ def usage(rc):
     print('-e, --default               : Sets default (10.0.0.0/16) network addresses,')
     print('                              triggers setup and unattended modes, needs profile')
     print('                              (uses saved profile from initial run).')
-    print('-o, --do-it-like-babo       : Like above, but uses "babo" (10.16.0.0/12) network')
-    print('                              addresses.')
     print('-j, --no-keys               : Do not create ssh keys')
     print('                              (only in setup mode and together with -x).')
     print('-k, --no-pw                 : Do not set admin password')
     print('                              (only in setup mode and together with -x).')
     print('-h, --help                  : Print this help.')
-    print('\nNote on lvm volumes:')
-    print('- Default value for volumes is:')
-    print('  "' + lvmvols_default + '".')
-    print('- At least "linbo", "global" and "default-school" must be given.')
-    print('- "nn%FREE" means "use nn% of the remaining free space of the device for this volume".')
-    print('  Example: "linbo:50%FREE,global:10,default-school:100%FREE" means "linbo" takes 50% of')
-    print('  the volume, "global" takes 10G and "default-school" finally takes all of the rest.')
-    print('- "global" and "default-school" are mounted with quota options.')
+
     sys.exit(rc)
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='Prepare a linuxmuster.net appliance installation.')
+    parser.add_argument('-x', '--force', action='store_true', help='Force run on an already configured system.')
+    parser.add_argument('-i', '--initial', action='store_true', help='Prepare the appliance initially for rollout.')
+    parser.add_argument('-s', '--setup', action='store_true', help='Further appliance setup (network, swapsize).')
+    parser.add_argument('-t', '--hostname', help='Hostname to apply (optional, works only with server profile).')
+    parser.add_argument('-n', '--ipnet', help='Ip address and bitmask assigned to the host')
+    parser.add_argument('-p', '--profile', choices=profile_list, help='Host profile to apply, mandatory. Expected values are "server" or "ubuntu".')
+    parser.add_argument('-c', '--createcert', action='store_true', help='Create self signed server cert (to be used only in setup mode and with ubuntu profile).')
+    parser.add_argument('-f', '--firewall', help='Firewall ip address (default *.*.*.254).')
+    parser.add_argument('-g', '--gateway', help='Gateway ip address (default is firewall ip).')
+    parser.add_argument('-d', '--domain', help='Domainname (default linuxmuster.lan).')
+    parser.add_argument('-r', '--serverip', help='Ip address of the server (unattended mode only).')
+    parser.add_argument('-w', '--swapsize', help='Swapfile size in GB (default "2").')
+    parser.add_argument('-a', '--rootpw', help='Set root password (only with -s).')
+    parser.add_argument('-b', '--reboot', action='store_true', help='Reboots finally (only in unattended mode).')
+    parser.add_argument('-u', '--unattended', action='store_true', help='Unattended mode, do not ask, use defaults.')
+    parser.add_argument('-e', '--default', action='store_true', help='Sets default (10.0.0.0/16) network addresses, triggers setup and unattended modes.')
+    parser.add_argument('-j', '--no-keys', dest='no_keys', action='store_true', help='Do not create ssh keys (only in setup mode and together with -x).')
+    parser.add_argument('-k', '--no-pw', dest='no_pw', action='store_true', help='Do not set admin password (only in setup mode and together with -x).')
+    args = parser.parse_args()
+
+    config = PrepareConfig(
+        profile=args.profile,
+        hostname=args.hostname,
+        ipnet=args.ipnet,
+        firewallip=args.firewall,
+        gateway=args.gateway,
+        domainname=args.domain if args.domain is not None else domainname,
+        swapsize=args.swapsize if args.swapsize is not None else swapsize,
+        rootpw=args.rootpw if args.rootpw is not None else rootpw_default,
+        serverip=args.serverip if args.serverip is not None else serverip,
+        initial=args.initial,
+        setup=args.setup,
+        unattended=args.unattended,
+        force=args.force,
+        createcert=args.createcert,
+        nokeys=args.no_keys,
+        nopw=args.no_pw,
+        reboot=args.reboot,
+    )
+
+    if args.default:
+        config.setup_mode = 'default'
+        config.unattended = True
+        config.setup = True
+
+    return config
+
+
+def apply_config(config):
+    global profile, hostname, firewallip, gateway, ipnet, serverip
+    global swapsize, rootpw, initial, setup, unattended, force, createcert, nokeys, nopw
+    global reboot, setup_mode, domainname
+
+    if config.profile is not None:
+        profile = config.profile
+    if config.hostname is not None:
+        hostname = config.hostname
+    if config.ipnet is not None:
+        ipnet = config.ipnet
+    if config.firewallip is not None:
+        firewallip = config.firewallip
+    if config.gateway is not None:
+        gateway = config.gateway
+    domainname = config.domainname
+    swapsize = config.swapsize
+    rootpw = config.rootpw
+    serverip = config.serverip
+    initial = config.initial
+    setup = config.setup
+    unattended = config.unattended
+    force = config.force
+    createcert = config.createcert
+    nokeys = config.nokeys
+    nopw = config.nopw
+    reboot = config.reboot
+    setup_mode = config.setup_mode
 
 
 # test internet connection by deb.linuxmuster.net
@@ -280,20 +365,6 @@ def inputDomainname(domainname):
     return domainname or domainname_saved
 
 
-# returns entered pvdevice
-def inputPvdevice(pvdevice):
-    pvdevice_saved = pvdevice
-    pvdevice = input('Enter physical device to use for LVM [' + str(pvdevice) + ']: ')
-    return pvdevice or pvdevice_saved
-
-
-# return entered lvm volume definitions
-def inputLvmvols(lvmvols):
-    lvmvols_saved = lvmvols
-    lvmvols = input('Enter lvm volumes definition [' + str(lvmvols) + ']: ')
-    return lvmvols or lvmvols_saved
-
-
 # returns entered swapsize
 def inputSwapsize(swapsize):
     swapsize_saved = swapsize
@@ -359,155 +430,55 @@ def isValidHostIpv4(ip):
         return False
 
 
-# get issue name
-def getIssue():
-    rc, content = readTextfile('/etc/issue')
-    issue = content.split(' ')[1]
-    if issue > '17.10' or issue == 'Bionic':
-        return 'bionic'
-    else:
-        return 'xenial'
-
-
 # remove unnecessary stuff
 def do_cleaning():
     print('## Remove unnecessary stuff')
-    subprocess.call('DEBIAN_FRONTEND=noninteractive apt-get -y purge ' + purgepkgs, shell=True)
-    subprocess.call('/usr/share/linuxmuster/prepare/disable-cloud-services', shell=True)
+    run_shell_command('DEBIAN_FRONTEND=noninteractive apt-get -y purge ' + purgepkgs, shell=True)
 
 
-# return lvm volume mountpoint
-def getVolmount(volname):
-    if volname == 'var':
-        volmount = '/' + volname
-    elif volname == 'linbo':
-        volmount = '/srv/' + volname
-    elif volname == 'global':
-        volmount = '/srv/samba/' + volname
-    elif volname == 'default-school':
-        volmount = '/srv/samba/schools/' + volname
-    else:
-        volmount = None
-    return volmount
+# check and configure locale
+def do_locale():
+    print('## Check and configure locale')
+    proc = run_shell_command('locale', shell=True, capture_output=True)
+    locale_output = proc.stdout if hasattr(proc, 'stdout') and proc.stdout is not None else ''
+    lang_match = re.search(r'^LANG=(.+)$', locale_output, re.MULTILINE)
+
+    if lang_match and lang_match.group(1).strip():
+        print('# Locale already configured: LANG=' + lang_match.group(1).strip())
+        return
+
+    print('# Locale not configured, running dpkg-reconfigure locales')
+    rc = run_shell_command('DEBIAN_FRONTEND=readline dpkg-reconfigure locales', shell=True)
+    if rc != 0:
+        print('# dpkg-reconfigure locale failed, trying dpkg-reconfigure locales')
+        rc = run_shell_command('DEBIAN_FRONTEND=readline dpkg-reconfigure locales', shell=True)
+    if rc != 0:
+        print('Locale configuration failed!')
+        sys.exit(rc)
 
 
-# create lvm volumes array
-def do_lvmvols_array(lvmvols, lvmmand):
-    if lvmvols is None:
-        return None
-    # test if all mandatory volumes are present
-    for volume in lvmmand:
-        if volume not in lvmvols:
-            print('Volume ' + volume + ' is not defined!')
-            return None
-    # create array
-    lvmvols_array = []
-    try:
-        for volume in lvmvols.split(','):
-            volume_array = volume.split(':')
-            volname = volume_array[0]
-            volsize = volume_array[1]
-            volmount = getVolmount(volname)
-            # test if volname is valid
-            volvalid = re.match('^[\w-]+$', volname) is not None
-            if not volvalid or volmount is None:
-                print(volname + ' is no valid volume name.')
-                return None
-            # test size parameter
-            try:
-                int(volsize.split('%', 1)[0])
-            except Exception as error:
-                print(volsize + ' is no valid volume size.')
-                return None
-            volume_array.append(volmount)
-            lvmvols_array.append(volume_array)
-    except Exception as error:
-        print(Exception)
-        return None
-    return lvmvols_array
+# check and configure timezone
+def do_timezone():
+    print('## Check and configure timezone')
+    proc = run_shell_command('timedatectl', shell=True, capture_output=True)
+    timedatectl_output = proc.stdout if hasattr(proc, 'stdout') and proc.stdout is not None else ''
+    timezone_match = re.search(r'Time zone:\s+(.+?)\s', timedatectl_output)
 
-# lvm
-def do_lvm():
-    print('## LVM')
-    # create lvm
-    print('# Creating physical volume ' + pvdevice + '.')
-    if subprocess.call('pvcreate ' + pvdevice, shell=True) != 0:
-        print('Failed!')
-        sys.exit(1)
-    # read fstab
-    rc, fstab = readTextfile('/etc/fstab')
-    fstab = fstab + '\n'
-    print('# Creating volume group ' + vgname + '.')
-    if subprocess.call('vgcreate ' + vgname + ' ' + pvdevice, shell=True) != 0:
-        print('Failed!')
-        sys.exit(1)
-    var_on_lvm = False
-    for item in lvmvols_array:
-        volname = item[0]
-        volsize = item[1]
-        if '%' in volsize:
-            volsize = ' -l ' + volsize
-        else:
-            volsize = ' -L ' + volsize + 'G'
-        volmnt = item[2]
-        subprocess.call('mkdir -p ' + volmnt, shell=True)
-        volpath = '/dev/' + vgname + '/' + volname
-        print('# Creating logical volume ' + volname + '.')
-        lvcreate = 'lvcreate' + volsize + ' -n ' + volname + ' ' + vgname
-        #print('# ' + lvcreate)
-        if subprocess.call(lvcreate, shell=True) != 0:
-            sys.exit(1)
-        if subprocess.call('mkfs.ext4 -L ' + volname + ' ' + volpath, shell=True) != 0:
-            sys.exit(1)
-        # set quota mount options
-        if volname == 'global' or volname == 'default-school':
-            mntopts = quotamntopts
-        else:
-            mntopts = 'defaults'
-        fstab = fstab + volpath + ' ' + volmnt + ' ext4 ' + mntopts + ' 0 1\n'
-        if volmnt == '/var':
-            var_on_lvm = True
-    print('# Writing /etc/fstab.')
-    if not writeTextfile('/etc/fstab', fstab, 'w'):
-        sys.exit(1)
-    if var_on_lvm:
-        print('# Moving /var.')
-        if subprocess.call('mount /dev/' + vgname + '/var /mnt', shell=True) != 0:
-            sys.exit(1)
-        if subprocess.call('rsync -a /var/ /mnt/', shell=True) != 0:
-            sys.exit(1)
-        if subprocess.call('umount /mnt && rm -rf /var/*', shell=True) != 0:
-            sys.exit(1)
-    if subprocess.call('mount -a', shell=True) != 0:
-        sys.exit(1)
+    if timezone_match and timezone_match.group(1).strip():
+        print('# Timezone already configured: ' + timezone_match.group(1).strip())
+        return
+
+    print('# Timezone not configured, running dpkg-reconfigure tzdata')
+    rc = run_shell_command('DEBIAN_FRONTEND=readline dpkg-reconfigure tzdata', shell=True)
+    if rc != 0:
+        print('Timezone configuration failed!')
+        sys.exit(rc)
 
 
-# set quota mount options to fstab if no lvm is defined
-def do_fstab_root():
-    mntopts = quotamntopts + ',errors=remount-ro'
-    config = FSTabConfig(path='/etc/fstab')
-    config.load()
-    count = 0
-    count_max = len(config.tree.filesystems)
-    while count < count_max:
-        mp = config.tree.filesystems[count].mountpoint
-        #print('## Mountpoint ' + str(count) + ' ' + mp)
-        if mp == '/':
-            print('# Modifying mount options for "' + mp + '".')
-            config.tree.filesystems[count].options = mntopts
-            config.save()
-            subprocess.call('mount -o remount /', shell=True)
-            break
-        count += 1
-
-
-# activate quota on server partitions
-def do_quota():
-    print('# Activating quota.')
-    subprocess.call('mount -a', shell=True)
-    subprocess.call('quotaoff -a', shell=True)
-    subprocess.call('quotacheck -cvugam', shell=True)
-    subprocess.call('quotaon -a', shell=True)
+# add pre-mount script for quota and rebuild initramfs
+def do_dracut():
+    print('# Add mount options for quota.')
+    run_shell_command('/usr/bin/dracut --force --add linuxmuster', shell=True)
 
 
 # swap file
@@ -517,11 +488,11 @@ def do_swap(swapsize):
     if not os.path.isfile(swapfile):
         print('No swapfile found, skipping this step!')
         return
-    subprocess.call('swapoff ' + swapfile, shell=True)
-    subprocess.call('rm ' + swapfile, shell=True)
+    run_shell_command('swapoff ' + swapfile, shell=True)
+    run_shell_command('rm ' + swapfile, shell=True)
     if unattended == True:
         try:
-            subprocess.call('fallocate -l ' + gbsize + ' ' + swapfile, shell=True)
+            run_shell_command('fallocate -l ' + gbsize + ' ' + swapfile, shell=True)
         except:
             print('Cannot create ' + swapfile + '!')
             sys.exit(1)
@@ -531,22 +502,22 @@ def do_swap(swapsize):
             swapsize = input('Enter the size of the swapfile in GB [' + defaultsize + ']: ')
             swapsize = swapsize or defaultsize
             gbsize = swapsize + 'G'
-            rc = subprocess.call('fallocate -l ' + gbsize + ' ' + swapfile, shell=True)
+            rc = run_shell_command('fallocate -l ' + gbsize + ' ' + swapfile, shell=True)
             if rc == 0:
                 break
             else:
                 print("Invalid entry!")
-    subprocess.call('chmod 600 ' + swapfile, shell=True)
-    subprocess.call('mkswap ' + swapfile, shell=True)
-    subprocess.call('swapon ' + swapfile, shell=True)
-    subprocess.call('swapon --show', shell=True)
+    run_shell_command('chmod 600 ' + swapfile, shell=True)
+    run_shell_command('mkswap ' + swapfile, shell=True)
+    run_shell_command('swapon ' + swapfile, shell=True)
+    run_shell_command('swapon --show', shell=True)
 
 
 # root password
 def do_password(rootpw):
     print('## Passwords')
     printr('# root ... ')
-    rc = subprocess.call('echo "root:' + rootpw + '" | chpasswd', shell=True)
+    rc = run_shell_command('echo "root:' + rootpw + '" | chpasswd', shell=True)
     if rc == 0:
         print('OK!')
     else:
@@ -555,7 +526,7 @@ def do_password(rootpw):
         try:
             pwd.getpwnam(item)
             printr('# ' + item + ' ... ')
-            rc = subprocess.call('echo "' + item + ':' + rootpw + '" | chpasswd', shell=True)
+            rc = run_shell_command('echo "' + item + ':' + rootpw + '" | chpasswd', shell=True)
             print('OK!')
         except KeyError:
             continue
@@ -566,11 +537,11 @@ def do_keys():
     print('## SSH host keys')
     hostkey_prefix = '/etc/ssh/ssh_host_'
     crypto_list = ['dsa', 'ecdsa', 'ed25519', 'rsa']
-    subprocess.call('rm -f /etc/ssh/*key*', shell=True)
+    run_shell_command('rm -f /etc/ssh/*key*', shell=True)
     for a in crypto_list:
         printr(' * ' + a + ' host key:')
         try:
-            subprocess.call('ssh-keygen -t ' + a + ' -f ' + hostkey_prefix + a + '_key -N ""', shell=True)
+            run_shell_command('ssh-keygen -t ' + a + ' -f ' + hostkey_prefix + a + '_key -N ""', shell=True)
             print(' Success!')
         except:
             print(' Failed!')
@@ -585,12 +556,12 @@ def do_sslcert(profile, domainname):
     keyfile = ssldir + '/' + profile + '.key.pem'
     certfile = ssldir + '/' + profile + '.cert.pem'
     days = '3653'
-    subprocess.call('mkdir -p ' + ssldir, shell=True)
-    subprocess.call('openssl genrsa -out ' + keyfile + ' 2048', shell=True)
-    subprocess.call('chmod 640 ' + keyfile, shell=True)
-    subprocess.call('echo -e "\n\n\n' + domainname + '\n' + profile + '\n' + profile
+    run_shell_command('mkdir -p ' + ssldir, shell=True)
+    run_shell_command('openssl genrsa -out ' + keyfile + ' 2048', shell=True)
+    run_shell_command('chmod 640 ' + keyfile, shell=True)
+    run_shell_command('echo -e "\n\n\n' + domainname + '\n' + profile + '\n' + profile
         + '\n\n\n\n" | openssl req -new -key ' + keyfile + ' -out ' + csrfile, shell=True)
-    subprocess.call('openssl x509 -req -days ' + days + ' -in '
+    run_shell_command('openssl x509 -req -days ' + days + ' -in '
         + csrfile + ' -signkey ' + keyfile + ' -out ' + certfile, shell=True)
 
 
@@ -600,9 +571,9 @@ def do_updates():
         print('# No internet connection!')
         sys.exit(1)
     print('## Installing updates')
-    subprocess.call('DEBIAN_FRONTEND=noninteractive apt-get update', shell=True)
-    res = subprocess.call('DEBIAN_FRONTEND=noninteractive apt-get -q=2 dist-upgrade', shell=True)
-    subprocess.call('apt-get clean && apt-get -q=2 autoremove', shell=True)
+    run_shell_command('DEBIAN_FRONTEND=noninteractive apt-get update', shell=True)
+    res = run_shell_command('DEBIAN_FRONTEND=noninteractive apt-get -q=2 dist-upgrade', shell=True)
+    run_shell_command('apt-get clean && apt-get -q=2 autoremove', shell=True)
     if res != 0:
         print('Updates failed!')
         sys.exit(res)
@@ -613,12 +584,12 @@ def do_install(pkgs):
     if pkgs is None:
         return
     print('## Installing software')
-    subprocess.call('DEBIAN_FRONTEND=noninteractive apt-get -q=2 install ' + pkgs, shell=True)
-    subprocess.call('apt-get clean', shell=True)
+    run_shell_command('DEBIAN_FRONTEND=noninteractive apt-get -q=2 install ' + pkgs, shell=True)
+    run_shell_command('apt-get clean', shell=True)
     # check if essential pkgs are installed correctly
     for pkg in pkgs.split():
         print('Checking ' + pkg + ' ... ', end = '')
-        res = subprocess.call('dpkg -l | grep ^"ii  ' + pkg + '"', shell=True)
+        res = run_shell_command('dpkg -l | grep ^"ii  ' + pkg + '"', shell=True)
         if res != 0:
             print('Failed!')
             sys.exit(1)
@@ -651,7 +622,7 @@ def mergeInis():
 
 
 # print setup values
-def print_values(profile, hostname, domainname, hostip, netmask, firewallip, iface, swapsize, pvdevice, vg_exists):
+def print_values(profile, hostname, domainname, hostip, netmask, firewallip, iface, swapsize):
     print('\n## The system has been prepared with the following values:')
     print('# Profile   : ' + profile)
     print('# Hostname  : ' + hostname)
@@ -662,29 +633,16 @@ def print_values(profile, hostname, domainname, hostip, netmask, firewallip, ifa
     print('# Gateway   : ' + gateway)
     print('# Interface : ' + iface)
     print('# Swapsize  : ' + swapsize + 'G')
-    if pvdevice is not None:
-        print('# LVM device: ' + pvdevice)
-        if vg_exists:
-            print('  Using already existing device.')
-        else:
-            print('# LVM vlms  : ' + lvmvols)
 
 ## functions end
 
 
-subprocess.call('clear')
+run_shell_command('clear', shell=True)
 print('### lmn-prepare')
 
 # get cli args
-try:
-    opts, args = getopt.getopt(sys.argv[1:], "a:bcd:ef:g:hijkl:n:op:r:st:uv:w:x",
-        ["rootpw=", "reboot", "createcert", "domain=", "default", "firewall=", "gateway=", "help",
-        "initial", "no-keys", "no-pw", "pvdevice=", "volumes=", "ipnet=", "profile=",
-        "do-it-like-babo", "serverip=", "setup", "hostname=", "unattended", "swapsize=", "force"])
-except getopt.GetoptError as err:
-    # print help information and exit:
-    print(err)  # will print something like "option -a not recognized"
-    usage(2)
+config = parse_args()
+apply_config(config)
 
 # read saved profile from previous run
 inifile = None
@@ -704,63 +662,6 @@ if inifile is not None:
     except:
         pass
 
-# evaluate options
-for o, a in opts:
-    if o in ("-u", "--unattended"):
-        unattended = True
-    elif o in ("-e", "--default"):
-        setup_mode = 'default'
-        unattended = True
-        setup = True
-    elif o in ("-o", "--do-it-like-babo"):
-        setup_mode = 'babo'
-        unattended = True
-        setup = True
-    elif o in ("-x", "--force"):
-        force = True
-    elif o in ("-c", "--createcert"):
-        createcert = True
-    elif o in ("-w", "--swapsize"):
-        swapsize = str(a)
-    elif o in ("-p", "--profile"):
-        if a in profile_list:
-            profile = a
-        else:
-            usage(1)
-    elif o in ("-t", "--hostname"):
-        hostname = a
-    elif o in ("-l", "--pvdevice"):
-        pvdevice = a
-    elif o in ("-v", "--volumes"):
-        lvmvols = a
-    elif o in ("-r", "--serverip"):
-        serverip = a
-    elif o in ("-b", "--reboot"):
-        reboot = True
-    elif o in ("-i", "--initial"):
-        initial = True
-    elif o in ("-j", "--no-keys"):
-        nokeys = True
-    elif o in ("-k", "--no-pw"):
-        nopw = True
-    elif o in ("-s", "--setup"):
-        setup = True
-    elif o in ("-d", "--domain"):
-        domainname = a
-    elif o in ("-a", "--rootpw"):
-        rootpw = a
-    elif o in ("-n", "--ipnet"):
-        ipnet = a
-    elif o in ("-f", "--firewall"):
-        firewallip = a
-    elif o in ("-g", "--gateway"):
-        gateway = a
-    elif o in ("-h", "--help"):
-        usage(0)
-    else:
-        assert False, "unhandled option"
-        usage(1)
-
 # exit if system is already set up
 if force:
     print("## Force is given, skipping test for configured system.")
@@ -777,7 +678,6 @@ if not profile in profile_list or profile is None:
     print('Invalid profile!')
     usage(1)
 if profile != 'server':
-    pvdevice = None
     hostname = profile
 else:
     if hostname is None:
@@ -809,11 +709,6 @@ if setup is False and nopw == True:
 if force is False and nopw == True:
     print("-k can only be used together with -x!")
     usage(1)
-if pvdevice is not None and not initial:
-    print('LVM setup works only with -i!')
-    usage(1)
-if lvmvols is None:
-    lvmvols = lvmvols_default
 if not unattended:
     # do not set in interactive mode
     reboot = False
@@ -835,9 +730,7 @@ if len(iface_list) == 0:
 iface = inputIface(iface, iface_default, iface_list) if not unattended else iface_default
 
 # set default ip address & netmask
-if setup_mode == 'babo':
-    ipnet = ipnet_babo + ipnr + '/' + bitmask_babo
-elif setup_mode == 'default' or ipnet is None:
+if setup_mode == 'default' or ipnet is None:
     ipnet = ipnet_default + ipnr + '/' + bitmask_default
 
 # host ip/net
@@ -903,39 +796,6 @@ while True:
 # get & check network values -- end
 
 
-# get & check lvm values -- begin
-if initial:
-    print('## LVM')
-    pvdevice_saved = pvdevice
-    while True:
-        pvdevice = inputPvdevice(pvdevice_saved) if not unattended else pvdevice_saved
-        if pvdevice is not None:
-            if pathlib.Path(pvdevice).is_block_device():
-                break
-            else:
-                print(f'# {pvdevice} is not a block device!')
-                sys.exit(1) if unattended else print('Try again.')
-        else:
-            break
-    # get & check lvm volume defs
-    if pvdevice is not None:
-        # check if volume group exists already
-        res = subprocess.call('LANG=C vgdisplay | grep "VG Name" | grep -w ' + vgname, shell = True)
-        if res == 0:
-            print('# Volume group ' + vgname + ' exists already!')
-            vg_exists = True
-        else:
-            # process lvm volumes
-            lvmvols_saved = lvmvols
-            while True:
-                lvmvols = inputLvmvols(lvmvols_saved) if not unattended else lvmvols_saved
-                lvmvols_array = do_lvmvols_array(lvmvols, lvmmand)
-                if lvmvols_array is None:
-                    print(f'# There is something wrong with your volume definition: {lvmvols}!')
-                    sys.exit(1) if unattended else print('Try again.')
-                else:
-                    break
-# get & check lvm values -- end
 
 
 # get & check swapsize
@@ -958,15 +818,13 @@ if initial:
     do_cleaning()
     # check lvm data
     if profile == 'server':
-        if pvdevice is None:
-            do_fstab_root()
-        elif not vg_exists:
-            do_lvm()
-        do_quota()
+        do_locale()
+        do_timezone()
+        do_dracut()
         do_install(srvpkgs)
     # activate serial console
-    subprocess.call('systemctl enable serial-getty@ttyS0.service', shell=True)
-    subprocess.call('systemctl start serial-getty@ttyS0.service', shell=True)
+    run_shell_command('systemctl enable serial-getty@ttyS0.service', shell=True)
+    run_shell_command('systemctl start serial-getty@ttyS0.service', shell=True)
     do_password(rootpw)
     dnssearch = ''
 # setup mode
@@ -985,18 +843,10 @@ elif setup:
 
 # write configs, common and issue specific
 print('## Writing configuration')
-subprocess.call('mkdir -p ' + libdir, shell=True)
+run_shell_command('mkdir -p ' + libdir, shell=True)
 # delete cloud-init netcfg if present (we provide our own)
 if os.path.isdir('/etc/netplan'):
-    subprocess.call('rm -f /etc/netplan/*.yaml', shell=True)
-# set hostname persistent
-cloudcfg = '/etc/cloud/cloud.cfg'
-replstr = 'preserve_hostname: false'
-if os.path.isfile(cloudcfg):
-    rc, content = readTextfile(cloudcfg)
-    if replstr in content:
-        content = content.replace(replstr, replstr.replace('false', 'true'))
-        rc = writeTextfile(cloudcfg, content, 'w')
+    run_shell_command('rm -f /etc/netplan/*.yaml', shell=True)
 for item in os.listdir(templates):
     rc, content = readTextfile(templates + '/' + item)
     # extract oufile path from first line
@@ -1038,7 +888,7 @@ content = hostname + '.' + domainname
 writeTextfile(outfile, content, 'w')
 
 # print values
-print_values(profile, hostname, domainname, hostip, netmask, firewallip, iface, swapsize, pvdevice, vg_exists)
+print_values(profile, hostname, domainname, hostip, netmask, firewallip, iface, swapsize)
 
 print('\n### Finished - a reboot is necessary!')
 
@@ -1047,4 +897,4 @@ if not updates:
 
 if unattended and reboot:
     print('\n### Reboot requested ...')
-    subprocess.call('/sbin/reboot', shell=True)
+    run_shell_command('/sbin/reboot', shell=True)
