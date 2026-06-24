@@ -1,3 +1,17 @@
+linuxmuster-prepare (7.4.0) lmn74; urgency=low
+
+  * basic refactoring in conjunction with ubuntu 26.04 support (#30, 64a6234):
+    - replace dependency to python3-reconfigure,
+    - remove deprecated lvm and babo options,
+    - improve quota and fstab handling (ext4 quota feature needs to be
+      activated offline during boot),
+    - improve linuxmuster repo handling in lmn-appliance,
+    - purge ubuntu's cloud utils rather than disabling them,
+    - update sshd_config and resolv.conf templates.
+    - remove package revision no. from version.
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Wed, 24 Jun 2026 16:30:28 +0200
+
 linuxmuster-prepare (7.3.1-0) lmn73; urgency=low
 
   * fix "#" in passwords (04c5094).
