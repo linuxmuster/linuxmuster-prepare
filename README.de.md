@@ -70,7 +70,7 @@ Parameter | Wert | Bedeutung
 - Appliance mit 2 Festplatten einrichten, zum Beispiel:
   - HD 1: 25G (Root-Dateisystem)
   - HD 2: 100G (Daten auf /srv eingehängt))
-- [Ubuntu Server 18.04 Minimalinstallation](https://www.howtoforge.com/tutorial/ubuntu-minimal-server-install/) durchführen.
+- [Ubuntu Server Installation](https://ubuntu.com/download/server) durchführen.
   - System in eine Partition auf HD 1 installieren (keine Swappartition),
   - auf HD 2 eine ext4-Partition einrichten und unter /srv einhängen Eintrag in `/etc/fstab`:
     `/dev/vdb1 /srv ext4 defaults 0 1`

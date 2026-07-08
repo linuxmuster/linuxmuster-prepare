@@ -72,7 +72,7 @@ Parameter | Value | Description
 - Set up the appliance with 2 hard disks, for example:
   - HD 1: 25G (root filesystem)
   - HD 2: 100G (data mounted at /srv)
-- Perform a [Ubuntu Server 18.04 minimal installation](https://www.howtoforge.com/tutorial/ubuntu-minimal-server-install/).
+- Perform a [Ubuntu Server installation](https://ubuntu.com/download/server).
   - Install the system into a single partition on HD 1 (no swap partition),
   - create an ext4 partition on HD 2 and mount it at /srv with the following entry in `/etc/fstab`:
     `/dev/vdb1 /srv ext4 defaults 0 1`
