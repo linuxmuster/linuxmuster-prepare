@@ -1,11 +1,13 @@
-linuxmuster-prepare (7.4.1-0) lmn74; urgency=low
+linuxmuster-prepare (7.4.1) lmn74; urgency=low
 
   * fix(linuxmuster-distupgrade): reinforce-install linuxmuster-* packages
     before dist-upgrade, so a new dependency conflicting with an installed
     package (e.g. dracut vs. initramfs-tools since linuxmuster-base7 7.4.11)
     no longer leaves the package held back (df24dd4).
+  * feat(linuxmuster-distupgrade): add -c|--clean (runs "apt-get clean" at
+    the end) and -h|--help options (5bf751d).
 
- -- Thomas Schmitt <thomas@linuxmuster.net>  Tue, 11 Aug 2026 10:03:00 +0200
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Tue, 11 Aug 2026 10:09:24 +0200
 
 linuxmuster-prepare (7.4.0) lmn74; urgency=low
 
