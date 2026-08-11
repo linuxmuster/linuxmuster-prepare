@@ -2,7 +2,22 @@
 #
 # linuxmuster-distupgrade
 # thomas@linuxmuster.net
-# 20211127
+# 20260811
 #
 
-apt-get update && apt-get -y dist-upgrade && apt-get -y autoremove
+# "apt-get dist-upgrade" only upgrades already-installed packages and never
+# removes one to satisfy a *new* dependency of another - so when a
+# linuxmuster package picks up a dependency that conflicts with something
+# already installed (e.g. linuxmuster-base7 depending on dracut, which
+# conflicts with initramfs-tools, as of 7.4.11), dist-upgrade just leaves
+# that package held back instead of resolving it. "apt-get install <pkg>"
+# uses a more assertive solver that IS willing to remove a conflicting
+# package to satisfy the target, so reinforce all installed linuxmuster-*
+# packages that way first, then let dist-upgrade handle the rest of the
+# system as before.
+lmnpkgs="$(dpkg -l 'linuxmuster-*' 2>/dev/null | awk '/^ii/ { print $2 }')"
+
+apt-get update && \
+  { [ -z "$lmnpkgs" ] || apt-get -y install $lmnpkgs; } && \
+  apt-get -y dist-upgrade && \
+  apt-get -y autoremove
