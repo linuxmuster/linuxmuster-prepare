@@ -1,9 +1,33 @@
 #!/bin/sh
 #
-# linuxmuster-distupgrade
+# linuxmuster-distupgrade [-c|--clean] [-h|--help]
 # thomas@linuxmuster.net
 # 20260811
 #
+# -c, --clean  run "apt-get clean" at the end, to empty the local package
+#              archive cache (/var/cache/apt/archives) once the upgrade
+#              is confirmed to have worked.
+# -h, --help   print this help and exit.
+#
+
+usage() {
+  echo "Usage: $(basename "$0") [-c|--clean] [-h|--help]"
+  echo
+  echo "Updates the package lists and upgrades the system, working around"
+  echo "apt-get dist-upgrade's refusal to remove a package to satisfy a"
+  echo "newly added, conflicting dependency of an already-installed one."
+  echo
+  echo "  -c, --clean  run 'apt-get clean' at the end"
+  echo "  -h, --help   print this help and exit"
+}
+
+clean=0
+for arg in "$@"; do
+  case "$arg" in
+    -c|--clean) clean=1 ;;
+    -h|--help) usage; exit 0 ;;
+  esac
+done
 
 # "apt-get dist-upgrade" only upgrades already-installed packages and never
 # removes one to satisfy a *new* dependency of another - so when a
@@ -20,4 +44,5 @@ lmnpkgs="$(dpkg -l 'linuxmuster-*' 2>/dev/null | awk '/^ii/ { print $2 }')"
 apt-get update && \
   { [ -z "$lmnpkgs" ] || apt-get -y install $lmnpkgs; } && \
   apt-get -y dist-upgrade && \
-  apt-get -y autoremove
+  apt-get -y autoremove && \
+  { [ "$clean" = 0 ] || apt-get clean; }
