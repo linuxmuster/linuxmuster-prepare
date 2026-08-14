@@ -1,3 +1,14 @@
+linuxmuster-prepare (7.4.2) lmn74; urgency=low
+
+  * fix(lmn-prepare): strip legacy journaled-quota mount options
+    (usrjquota=/grpjquota=/jqfmt=) from ext4 fstab entries before enabling
+    the modern on-disk quota feature, and mask the now-redundant
+    quotaon-root.service/quotaon.service systemd units, fixing
+    quotaon-root.service failing permanently at boot on hosts upgraded
+    from 7.3. Verified end to end across a real reboot.
+
+ -- Thomas Schmitt <thomas@linuxmuster.net>  Fri, 14 Aug 2026 16:44:37 +0200
+
 linuxmuster-prepare (7.4.1) lmn74; urgency=low
 
   * fix(linuxmuster-distupgrade): reinforce-install linuxmuster-* packages

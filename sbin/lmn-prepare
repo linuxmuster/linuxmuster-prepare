@@ -1,8 +1,10 @@
 #!/usr/bin/python3
 #
-# lmn-prepare
-# thomas@linuxmuster.net
-# 20260622
+# Filename     : lmn-prepare
+# Description  : Prepare a linuxmuster.net appliance installation
+# Signed-off by: thomas@linuxmuster.net
+# Assisted by  : Claude
+# Date         : 20260814
 #
 
 import argparse
@@ -475,8 +477,78 @@ def do_timezone():
         sys.exit(rc)
 
 
-# add pre-mount script for quota and rebuild initramfs
+# legacy journaled-quota mount options that conflict with the modern ext4
+# on-disk quota feature the linuxmuster dracut module activates: once that
+# feature is on, the kernel logs "EXT4-fs: Journaled quota options ignored
+# when QUOTA feature is enabled" and ignores them at mount time. On a host
+# upgraded from 7.3 this used to leave these options in fstab forever, so
+# strip them - usrquota/grpquota (no "j") must stay, they still gate
+# DQUOT_LIMITS_ENABLED under the on-disk feature.
+LEGACY_QUOTA_OPTION_PREFIXES = ('usrjquota=', 'grpjquota=', 'jqfmt=')
+
+
+def strip_legacy_quota_options_from_fstab():
+    """Remove legacy journaled-quota mount options from ext4 fstab entries."""
+    fstab = '/etc/fstab'
+    try:
+        with open(fstab) as f:
+            lines = f.readlines()
+    except Exception as error:
+        print(f'# Failed to read {fstab}: {error}')
+        return False
+
+    changed = False
+    updated_lines = []
+    for line in lines:
+        if line.startswith('#') or not line.strip():
+            updated_lines.append(line)
+            continue
+        parts = line.split()
+        if len(parts) < 4 or parts[2] != 'ext4':
+            updated_lines.append(line)
+            continue
+        options = parts[3].split(',')
+        kept = [opt for opt in options if not opt.startswith(LEGACY_QUOTA_OPTION_PREFIXES)]
+        if kept != options:
+            parts[3] = ','.join(kept)
+            line = '\t'.join(parts) + '\n'
+            changed = True
+        updated_lines.append(line)
+
+    if not changed:
+        return True
+
+    try:
+        with open(fstab, 'w') as f:
+            f.writelines(updated_lines)
+    except Exception as error:
+        print(f'# Failed to update {fstab}: {error}')
+        return False
+    return True
+
+
+def mask_redundant_quotaon_units():
+    """Mask systemd's auto-generated quotaon-root.service/quotaon.service.
+
+    Once the ext4 on-disk quota feature is active, the kernel enables quota
+    tracking automatically as soon as the filesystem is mounted (verified:
+    `repquota` already reports real usage with these units never having run
+    successfully). Calling quotaon afterwards to turn on what's already on
+    fails ("quotaon: using . on <dev> [<mnt>]: File exists"), permanently
+    failing the unit at every boot for no functional benefit - so mask it.
+    Masking a unit name systemd hasn't generated (yet) is a harmless no-op.
+    """
+    run_shell_command('systemctl mask quotaon-root.service quotaon.service', shell=True)
+
+
+# remove legacy quota mount options, mask now-redundant quotaon units, add
+# pre-mount script for quota and rebuild initramfs
 def do_dracut():
+    print('# Remove legacy journaled quota options from fstab.')
+    if not strip_legacy_quota_options_from_fstab():
+        sys.exit(1)
+    print('# Mask redundant quotaon units.')
+    mask_redundant_quotaon_units()
     print('# Add mount options for quota.')
     run_shell_command('/usr/bin/dracut --force --add linuxmuster', shell=True)
 
