@@ -2,11 +2,11 @@
 
 Scripts and configuration templates to initially setup a virtual appliance for linuxmuster.net 7.3.
 
-Skripte und Konfigurationsvorlagen für die Vorbereitung einer virtuellen Appliance für linuxmuster.net 7.3 auf Basis von Ubuntu Server 22.04.
+Skripte und Konfigurationsvorlagen für die Vorbereitung einer virtuellen Appliance für linuxmuster.net 7.3 auf Basis von Ubuntu Server 24.04.
 
 ## Das Skript lmn-appliance
 
-[lmn-appliance](https://raw.githubusercontent.com/linuxmuster/linuxmuster-prepare/master/lmn-appliance) bereitet die Appliance für das Rollout vor:
+[lmn-appliance](https://raw.githubusercontent.com/linuxmuster/linuxmuster-prepare/refs/heads/7.3/lmn-appliance) bereitet die Appliance für das Rollout vor:
 - Es bringt das Betriebssystem auf den aktuellen Stand,
 - richtet das linuxmuster.net-Paket-Repo ein,
 - installiert das Paket **linuxmuster-prepare** und
@@ -18,7 +18,7 @@ Skripte und Konfigurationsvorlagen für die Vorbereitung einer virtuellen Applia
 
 Installation:
 - Skript herunterladen:  
-  `wget https://raw.githubusercontent.com/linuxmuster/linuxmuster-prepare/master/lmn-appliance`
+  `wget https://raw.githubusercontent.com/linuxmuster/linuxmuster-prepare/refs/heads/7.3/lmn-appliance`
 - Ausführbar machen:
   `chmod +x lmn-appliance`
 - Skript starten:
