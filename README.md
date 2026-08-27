@@ -1,8 +1,8 @@
 # linuxmuster-prepare
 
-Scripts and configuration templates to initially setup a virtual appliance for linuxmuster.net 7.1 & 7.2.
+Scripts and configuration templates to initially setup a virtual appliance for linuxmuster.net 7.3.
 
-Skripte und Konfigurationsvorlagen für die Vorbereitung einer virtuellen Appliance für linuxmuster.net 7.1/7.2 auf Basis von Ubuntu Server 18.04/22.04.
+Skripte und Konfigurationsvorlagen für die Vorbereitung einer virtuellen Appliance für linuxmuster.net 7.3 auf Basis von Ubuntu Server 22.04.
 
 ## Das Skript lmn-appliance
 
