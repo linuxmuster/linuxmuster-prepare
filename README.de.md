@@ -12,8 +12,11 @@ Hinweis: Zur Vorbereitung eines linuxmuster.net-7.3-Systems gehen Sie bitte [hie
 - installiert das Paket **linuxmuster-prepare** und
 - startet dann das Vorbereitungsskript _lmn-prepare_,
   - das die für das jeweilige Appliance-Profil benötigten Pakete installiert,
-  - das Netzwerk konfiguriert und
-  - das root-Passwort auf _Muster!_ setzt.
+  - das Netzwerk konfiguriert,
+  - das root-Passwort auf _Muster!_ setzt und
+  - auf einer ext4-Rootpartition Dateisystemquota aktiviert.
+
+Hinweis: Richten Sie Ihre Serverdateisysteme schon bei der Installation von Ubuntu Server entsprechend Ihrer Bedürfnisse ein. In den meisten Fällen genügt eine Rootpartition.
 
 Installation:
 - Skript herunterladen:  
