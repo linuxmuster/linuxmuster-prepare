@@ -12,9 +12,8 @@ Hinweis: Zur Vorbereitung eines linuxmuster.net-7.3-Systems gehen Sie bitte [hie
 - installiert das Paket **linuxmuster-prepare** und
 - startet dann das Vorbereitungsskript _lmn-prepare_,
   - das die für das jeweilige Appliance-Profil benötigten Pakete installiert,
-  - das Netzwerk konfiguriert,
-  - das root-Passwort auf _Muster!_ setzt und
-  - im Falle des Serverprofils optional LVM einrichtet.
+  - das Netzwerk konfiguriert und
+  - das root-Passwort auf _Muster!_ setzt.
 
 Installation:
 - Skript herunterladen:  

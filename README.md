@@ -14,8 +14,10 @@ Note: If you want to prepare a linuxmuster.net 7.3 system, you have to go [here]
 - then starts the preparation script _lmn-prepare_,
   - which installs the packages required for the respective appliance profile,
   - configures the network,
-  - sets the root password to _Muster!_, and
-  - optionally sets up LVM in the case of the server profile.
+  - sets the root password to _Muster!_ and
+  - activates filesystem quota in case of an ext4 root filesystem.
+
+Note: Configure your server file systems to meet your requirements already during the Ubuntu Server installation. In most cases, one root partition is sufficient.
 
 Installation:
 
