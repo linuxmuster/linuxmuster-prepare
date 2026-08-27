@@ -2,6 +2,8 @@
 
 Scripts and configuration templates to prepare a virtual appliance for linuxmuster.net 7.4 based on Ubuntu Server 26.04.
 
+Note: If you want to prepare a linuxmuster.net 7.3 system, you have to go [here](https://github.com/linuxmuster/linuxmuster-prepare/tree/7.3).
+
 ## The lmn-appliance script
 
 [lmn-appliance](https://raw.githubusercontent.com/linuxmuster/linuxmuster-prepare/master/lmn-appliance) prepares the appliance for rollout:
