@@ -6,7 +6,7 @@ Hinweis: Zur Vorbereitung eines linuxmuster.net-7.3-Systems gehen Sie bitte [hie
 
 ## Das Skript lmn-appliance
 
-[lmn-appliance](https://raw.githubusercontent.com/linuxmuster/linuxmuster-prepare/master/lmn-appliance) bereitet die Appliance für das Rollout vor:
+[lmn-appliance](https://raw.githubusercontent.com/linuxmuster/linuxmuster-prepare/refs/heads/7.3/lmn-appliance) bereitet die Appliance für das Rollout vor:
 - Es bringt das Betriebssystem auf den aktuellen Stand,
 - richtet das linuxmuster.net-Paket-Repo ein,
 - installiert das Paket **linuxmuster-prepare** und
@@ -18,7 +18,7 @@ Hinweis: Zur Vorbereitung eines linuxmuster.net-7.3-Systems gehen Sie bitte [hie
 
 Installation:
 - Skript herunterladen:  
-  `wget https://raw.githubusercontent.com/linuxmuster/linuxmuster-prepare/master/lmn-appliance`
+  `wget https://raw.githubusercontent.com/linuxmuster/linuxmuster-prepare/refs/heads/7.3/lmn-appliance`
 - Ausführbar machen:
   `chmod +x lmn-appliance`
 - Skript starten:
