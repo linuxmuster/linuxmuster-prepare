@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 #
-# lmn-appliance
-# thomas@linuxmuster.net
-# 20260618
+# Filename     : lmn-appliance
+# Description  : Installs linuxmuster.net repos and linuxmuster-prepare package, optionally invoking lmn-prepare
+# Signed-off by: thomas@linuxmuster.net
+# Assisted by  : Claude
+# Date         : 20260827
 #
 
 import configparser
@@ -50,6 +52,10 @@ def usage(rc):
     print('- "global" and "default-school" are mounted with quota options.')
     sys.exit(rc)
 
+
+# show help if called without any arguments
+if len(sys.argv) == 1:
+    usage(1)
 
 # get cli args
 try:
